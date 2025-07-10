@@ -13,6 +13,7 @@ LOCAL_MODULE := sdkdumper64
 
 LOCAL_SRC_FILES := source/main.cpp \
                    source/core/FNames.cpp \
+				   source/core/Offsets.cpp \
                    source/core/GUObjects.cpp \
                    source/core/SDK.cpp \
                    source/elf/Fix.cpp \
