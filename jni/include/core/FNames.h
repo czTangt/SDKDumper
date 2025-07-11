@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 
-#include "./mem/Mem.h"
+#include "../utils/Tools.h"
 #include "Offsets.h"
 
 extern uint32 MAX_SIZE;
@@ -40,7 +40,7 @@ struct WideStr
 
     static std::wstring w_str(kaddr str, size_t len)
     {
-        auto source = ReadArr<UTF16>(str, len);
+        auto source = Tools::ReadArr<UTF16>(str, len);
         std::wstring output(len, L'\0');
 
         for (size_t i = 0; i < len; i++)

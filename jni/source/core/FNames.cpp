@@ -12,14 +12,14 @@ std::string GetFNameFromID(uint32 index)
 
 void DumpBlocks423(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blockId, uint32 blockSize)
 {
-    kaddr It = getPtr(FNamePool + Offsets::FNamePoolToBlocks + (blockId * Offsets::PointerSize));
+    kaddr It = Tools::getPtr(FNamePool + Offsets::FNamePoolToBlocks + (blockId * Offsets::PointerSize));
     kaddr End = It + blockSize - Offsets::FNameEntryToString;
     uint32 Block = blockId;
     uint16 Offset = 0;
     while (It < End)
     {
         kaddr FNameEntry = It;
-        int16 FNameEntryHeader = Read<int16>(FNameEntry);
+        int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
         int StrLength = FNameEntryHeader >> Offsets::FNameEntryToLenBit;
         if (StrLength)
         {
@@ -41,7 +41,7 @@ void DumpBlocks423(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 
                     }
                     else
                     {
-                        str = readFixedString(StrPtr, StrLength);
+                        str = Tools::readFixedString(StrPtr, StrLength);
                     }
 
                     if (isVerbose)
@@ -79,11 +79,11 @@ void DumpStrings(std::string outputpath)
     if (gname.is_open())
     {
         std::cout << "[1] Dumping Strings ---" << std::endl;
-        kaddr FNamePool = getRealOffset(Offsets::GName) + Offsets::GNamesToFNamePool;
+        kaddr FNamePool = Tools::getRealOffset(Offsets::GName) + Offsets::GNamesToFNamePool;
 
         uint32 BlockSize = Offsets::FNameStride * 65536;
-        uint32 CurrentBlock = Read<uint32>(FNamePool + Offsets::FNamePoolToCurrentBlock);
-        uint32 CurrentByteCursor = Read<uint32>(FNamePool + Offsets::FNamePoolToCurrentByteCursor);
+        uint32 CurrentBlock = Tools::Read<uint32>(FNamePool + Offsets::FNamePoolToCurrentBlock);
+        uint32 CurrentByteCursor = Tools::Read<uint32>(FNamePool + Offsets::FNamePoolToCurrentByteCursor);
 
         // All Blocks Except Current
         for (uint32 BlockIdx = 0; BlockIdx < CurrentBlock; ++BlockIdx)

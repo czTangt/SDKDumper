@@ -1,7 +1,7 @@
 #ifndef OFFSETS_H
 #define OFFSETS_H
 
-#include "./mem/Mem.h"
+#include "../utils/Tools.h"
 
 namespace Offsets
 {

@@ -1,41 +1,40 @@
-#ifndef MEMORY_H
-#define MEMORY_H
+#ifndef TOOLS_H
+#define TOOLS_H
 
+#include <array>
 #include <cstdio>
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
 #include <string>
+#include <sys/syscall.h>
+#include <sys/uio.h>
+#include <unistd.h>
 #include <vector>
 
-#include "./proc/Proc.h"
-#include "./utils/Log.h"
+#include "Log.h"
+#include "Types.h"
 
-// Unsigned base types.
-typedef unsigned char uint8;
-typedef unsigned short int uint16;
-typedef unsigned int uint32;
-typedef unsigned long long uint64;
-typedef unsigned short UTF16;
+namespace Tools
+{
+extern pid_t target_pid;
+extern ModuleRange lib_range;
 
-// Signed base types.
-typedef signed char int8;
-typedef signed short int int16;
-typedef signed int int32;
-typedef signed long long int64;
+/*
+ * https://man7.org/linux/man-pages/man2/process_vm_readv.2.html
+ * Syscall Implementation of process_vm_readv & process_vm_writev
+ */
+bool pvm(void *address, void *buffer, size_t size, bool iswrite);
 
-// Unsigned pointer type.
-typedef uintptr_t kaddr;
+// Process Virtual Memory Reader
+bool vm_readv(void *address, void *buffer, size_t size);
+
+// Process Virtual Memory Writer
+bool vm_writev(void *address, void *buffer, size_t size);
 
 // get the PID of a target process by its name.
 pid_t get_target_pid(const char *process_name);
 
-extern struct ModuleRange
-{
-    kaddr base;
-    kaddr end;
-    size_t size;
-} lib_range;
 // get the base address of a module by its name.
 ModuleRange get_module_range(pid_t pid, const char *module_name);
 
@@ -75,5 +74,6 @@ template <typename T> std::vector<T> ReadArr(kaddr address, unsigned int size)
         vm_readv(reinterpret_cast<void *>(address), data.data(), sizeof(T) * size);
     return data;
 }
+} // namespace Tools
 
-#endif // MEMORY_H
+#endif // TOOLS_H

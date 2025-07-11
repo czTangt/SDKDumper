@@ -17,14 +17,11 @@ LOCAL_SRC_FILES := source/main.cpp \
                    source/core/GUObjects.cpp \
                    source/core/SDK.cpp \
                    source/elf/Fix.cpp \
-                   source/mem/Mem.cpp \
-                   source/proc/Proc.cpp \
+                   source/utils/Tools.cpp \
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
                     $(LOCAL_PATH)/include/core \
                     $(LOCAL_PATH)/include/elf \
-                    $(LOCAL_PATH)/include/mem \
-                    $(LOCAL_PATH)/include/proc \
                     $(LOCAL_PATH)/include/utils
 
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -lz -llog
