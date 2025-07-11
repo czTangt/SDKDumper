@@ -1,28 +1,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <dirent.h>
-#include <fstream>
-#include <getopt.h>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <vector>
-
-#include "../core/FNames.h"
-#include "../elf/Fix.h"
-#include "../utils/Tools.h"
+#include <android/log.h>
 
 extern bool isVerbose;
+
+#define TAG "SDKDump"
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, TAG, __VA_ARGS__))
+#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__))
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__))
 
 #endif // CONFIG_H

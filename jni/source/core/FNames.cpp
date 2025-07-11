@@ -1,7 +1,6 @@
-#include "../../include/core/FNames.h"
-#include "../../include/utils/Config.h"
+#include "FNames.h"
+#include "Config.h"
 
-uint32 MAX_SIZE = 100;
 uint32 GNameLimit = 170000;
 
 std::string GetFNameFromID(uint32 index)
@@ -10,7 +9,7 @@ std::string GetFNameFromID(uint32 index)
     return "";
 }
 
-void DumpBlocks423(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blockId, uint32 blockSize)
+void DumpBlocks(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blockId, uint32 blockSize)
 {
     kaddr It = Tools::getPtr(FNamePool + Offsets::FNamePoolToBlocks + (blockId * Offsets::PointerSize));
     kaddr End = It + blockSize - Offsets::FNameEntryToString;
@@ -88,11 +87,11 @@ void DumpStrings(std::string outputpath)
         // All Blocks Except Current
         for (uint32 BlockIdx = 0; BlockIdx < CurrentBlock; ++BlockIdx)
         {
-            DumpBlocks423(gname, count, FNamePool, BlockIdx, BlockSize);
+            DumpBlocks(gname, count, FNamePool, BlockIdx, BlockSize);
         }
 
         // Last Block
-        DumpBlocks423(gname, count, FNamePool, CurrentBlock, CurrentByteCursor);
+        DumpBlocks(gname, count, FNamePool, CurrentBlock, CurrentByteCursor);
         // for (uint32 i = 0; i < GNameLimit; i++)
         // {
         //     std::string s = GetFNameFromID(i);

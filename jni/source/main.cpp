@@ -1,4 +1,24 @@
-#include "../include/utils/Config.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <dirent.h>
+#include <fstream>
+#include <getopt.h>
+#include <iomanip>
+#include <iostream>
+#include <list>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
+
+#include "Config.h"
+#include "FNames.h"
+#include "Tools.h"
 
 using namespace std;
 
@@ -7,11 +27,6 @@ string outputpath("/data/local/tmp/match2024");
 static const char *lib_name = "libUE4.so";
 bool isStrDump = false;
 bool isVerbose = false;
-
-kaddr getHexAddr(const char *addr)
-{
-    return (kaddr)strtoul(addr, nullptr, 16);
-}
 
 int main(int argc, char *argv[])
 {
@@ -27,7 +42,7 @@ int main(int argc, char *argv[])
     }
 
     // get pid
-    Tools::target_pid = Tools::get_target_pid(pkg.c_str());
+    Tools::target_pid = Tools::getTargetPid(pkg.c_str());
     if (Tools::target_pid == -1)
     {
         cout << "Can't find the process" << endl;
@@ -36,7 +51,7 @@ int main(int argc, char *argv[])
     cout << "Process name: " << pkg.c_str() << ", Pid: " << Tools::target_pid << endl;
 
     // get module range
-    Tools::lib_range = Tools::get_module_range(Tools::target_pid, lib_name);
+    Tools::lib_range = Tools::getModuleRange(Tools::target_pid, lib_name);
     if (Tools::lib_range.base == 0)
     {
         cout << "Can't find Library: " << lib_name << endl;
@@ -50,7 +65,7 @@ int main(int argc, char *argv[])
 
     // get strings dump
     isStrDump = true;
-    Offsets::GName = getHexAddr("0x0B171CC0");
+    Offsets::GName = Tools::getHexAddr("0x0B171CC0");
     if (isStrDump)
     {
         DumpStrings(outputpath);

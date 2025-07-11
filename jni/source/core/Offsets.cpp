@@ -1,4 +1,4 @@
-#include "../../include/core/Offsets.h"
+#include "Offsets.h"
 
 namespace Offsets
 {

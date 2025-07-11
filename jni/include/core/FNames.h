@@ -4,20 +4,21 @@
 #include <iostream>
 #include <string>
 
-#include "../utils/Tools.h"
 #include "Offsets.h"
+#include "Tools.h"
 
-extern uint32 MAX_SIZE;
 extern uint32 GNameLimit;
 
 void DumpStrings(std::string outputpath);
 
 std::string GetFNameFromID(uint32 index);
 
-void DumpBlocks423(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blockId, uint32 blockSize);
+void DumpBlocks(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blockId, uint32 blockSize);
 
 struct WideStr
 {
+    static constexpr size_t MAX_SIZE = 100;
+
     static int is_surrogate(UTF16 uc)
     {
         return (uc - 0xd800u) < 2048u;

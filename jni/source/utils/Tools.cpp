@@ -1,4 +1,4 @@
-#include "../../include/utils/Tools.h"
+#include "Tools.h"
 
 namespace Tools
 {
@@ -29,7 +29,7 @@ bool vm_writev(void *address, void *buffer, size_t size)
     return pvm(address, buffer, size, true);
 }
 
-pid_t get_target_pid(const char *process_name)
+pid_t getTargetPid(const char *process_name)
 {
     if (!process_name)
     {
@@ -72,7 +72,7 @@ pid_t get_target_pid(const char *process_name)
 }
 
 ModuleRange lib_range{0, 0, 0};
-ModuleRange get_module_range(pid_t pid, const char *module_name)
+ModuleRange getModuleRange(pid_t pid, const char *module_name)
 {
     if (!module_name || !*module_name)
         return lib_range;
@@ -111,12 +111,12 @@ ModuleRange get_module_range(pid_t pid, const char *module_name)
 
 kaddr getRealOffset(kaddr offset)
 {
-    if (lib_range.base == 0)
-    {
-        LOGW("Error: Can't Find Base Addr for Real Offset");
-        return 0;
-    }
     return (lib_range.base + offset);
+}
+
+kaddr getHexAddr(const char *addr)
+{
+    return (kaddr)strtoul(addr, nullptr, 16);
 }
 
 std::string readCString(kaddr address, unsigned int maxSize)

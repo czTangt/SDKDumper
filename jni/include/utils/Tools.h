@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "Log.h"
 #include "Types.h"
 
 namespace Tools
@@ -33,10 +32,13 @@ bool vm_readv(void *address, void *buffer, size_t size);
 bool vm_writev(void *address, void *buffer, size_t size);
 
 // get the PID of a target process by its name.
-pid_t get_target_pid(const char *process_name);
+pid_t getTargetPid(const char *process_name);
 
 // get the base address of a module by its name.
-ModuleRange get_module_range(pid_t pid, const char *module_name);
+ModuleRange getModuleRange(pid_t pid, const char *module_name);
+
+// convert a kaddr offset to a real memory address.
+kaddr getHexAddr(const char *addr);
 
 // read a C-style string from a given address.
 std::string readCString(kaddr address, unsigned int maxSize);
