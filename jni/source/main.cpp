@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
     // get strings dump
     isStrDump = true;
-    Offsets::GName = Tools::getHexAddr("0x0B171CC0");
+    Offsets::Global::GName = Tools::getHexAddr("0x0B171CC0");
     if (isStrDump)
     {
         DumpStrings(outputpath);

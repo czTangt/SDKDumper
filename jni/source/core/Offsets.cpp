@@ -3,36 +3,57 @@
 namespace Offsets
 {
 //-----Global Offsets-----//
+namespace Global
+{
 kaddr GWorld = 0;
 kaddr GName = 0;
 kaddr GUObjectArray = 0;
 kaddr PointerSize = 0;
+} // namespace Global
 
 //---------SDK-----------//
-// Class: FNamePool
-kaddr FNameStride = 0;
-kaddr GNamesToFNamePool = 0; // NamePoolData, alignas(FNamePool)
-kaddr FNamePoolToCurrentBlock = 0;
-kaddr FNamePoolToCurrentByteCursor = 0;
-kaddr FNamePoolToBlocks = 0;
-// Class: FNameEntry
-kaddr FNameEntryToLenBit = 0;
-kaddr FNameEntryToString = 0;
+// UnrealNames.cpp
+namespace FNamePool
+{
+kaddr Entries = 0;
+} // namespace FNamePool
+
+namespace FNameEntryAllocator
+{
+kaddr Stride = 0;
+kaddr BlockSizeBytes = 0;
+kaddr Lock = 0;
+kaddr CurrentBlock = 0;
+kaddr CurrentByteCursor = 0;
+kaddr Blocks = 0;
+} // namespace FNameEntryAllocator
+
+namespace FNameEntry
+{
+kaddr FNameEntryHeader = 0;
+kaddr StringName = 0;
+kaddr StringLenBit = 0;
+} // namespace FNameEntry
 
 void initOffsets()
 {
     // Global Offsets
-    PointerSize = 0x8;
+    Global::PointerSize = 0x8;
 
     //---------SDK-----------//
-    // Class: FNamePool
-    FNameStride = 0x2;
-    GNamesToFNamePool = 0x38;
-    FNamePoolToCurrentBlock = 0x0;
-    FNamePoolToCurrentByteCursor = 0x4;
-    FNamePoolToBlocks = 0x8;
-    // Class: FNameEntry
-    FNameEntryToLenBit = 6;
-    FNameEntryToString = 0x2;
+    // UnrealNames.cpp
+    FNamePool::Entries = 0x0;
+
+    FNameEntryAllocator::Stride = 0x2;
+    FNameEntryAllocator::BlockSizeBytes = FNameEntryAllocator::Stride * FNameBlockOffsets;
+
+    FNameEntryAllocator::Lock = 0x0;               // 0x38
+    FNameEntryAllocator::CurrentBlock = 0x38;      // 0x4
+    FNameEntryAllocator::CurrentByteCursor = 0x3C; // 0x4
+    FNameEntryAllocator::Blocks = 0x40;            // 0x10000
+
+    FNameEntry::FNameEntryHeader = 0x0; // 0x2
+    FNameEntry::StringName = 0x2;       // 0x400
+    FNameEntry::StringLenBit = 0x6;
 }
 } // namespace Offsets

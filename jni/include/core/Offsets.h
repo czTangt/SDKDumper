@@ -6,21 +6,40 @@
 namespace Offsets
 {
 // Global Offsets
+namespace Global
+{
 extern kaddr GWorld;
 extern kaddr GName;
 extern kaddr GUObjectArray;
 extern kaddr PointerSize;
+} // namespace Global
 
 //---------SDK-----------//
-// Class: FNamePool
-extern kaddr FNameStride;
-extern kaddr GNamesToFNamePool; // NamePoolData, alignas(FNamePool)
-extern kaddr FNamePoolToCurrentBlock;
-extern kaddr FNamePoolToCurrentByteCursor;
-extern kaddr FNamePoolToBlocks;
-// Class: FNameEntry
-extern kaddr FNameEntryToLenBit;
-extern kaddr FNameEntryToString;
+// UnrealNames.cpp
+static constexpr kaddr FNameBlockOffsetBits = 16;
+static constexpr kaddr FNameBlockOffsets = 1 << FNameBlockOffsetBits;
+
+namespace FNamePool
+{
+extern kaddr Entries;
+} // namespace FNamePool
+
+namespace FNameEntryAllocator
+{
+extern kaddr Stride;
+extern kaddr BlockSizeBytes;
+extern kaddr Lock;
+extern kaddr CurrentBlock;
+extern kaddr CurrentByteCursor;
+extern kaddr Blocks;
+} // namespace FNameEntryAllocator
+
+namespace FNameEntry
+{
+extern kaddr FNameEntryHeader;
+extern kaddr StringName;
+extern kaddr StringLenBit;
+} // namespace FNameEntry
 
 void initOffsets();
 

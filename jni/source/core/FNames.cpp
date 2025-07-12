@@ -3,23 +3,50 @@
 
 uint32 GNameLimit = 170000;
 
-std::string GetFNameFromID(uint32 index)
-{
-    std::cout << "1";
-    return "";
-}
+// std::string GetFNameFromID(uint32 index)
+// {
+//     uint32 Block = index >> 16;
+//     uint16 Offset = index & 65535;
 
-void DumpBlocks(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blockId, uint32 blockSize)
+//     kaddr FNamePool = Tools::getRealOffset(Offsets::GName) + Offsets::GNamesToFNamePool;
+
+//     kaddr NamePoolChunk = Tools::getPtr(FNamePool + Offsets::FNamePoolToBlocks + (Block * Offsets::PointerSize));
+//     kaddr FNameEntry = NamePoolChunk + (Offsets::FNameStride * Offset);
+
+//     int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
+//     kaddr StrPtr = FNameEntry + Offsets::FNameEntryToString;
+//     int StrLength = FNameEntryHeader >> Offsets::FNameEntryToLenBit;
+
+//     /// Unicode Dumping Not Supported Yet
+//     if (StrLength > 0 && StrLength < 250)
+//     {
+//         bool wide = FNameEntryHeader & 1;
+//         if (wide)
+//         {
+//             return WideStr::getString(StrPtr, StrLength);
+//         }
+//         else
+//         {
+//             return Tools::readFixedString(StrPtr, StrLength);
+//         }
+//     }
+//     else
+//     {
+//         return "None";
+//     }
+// }
+
+void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSizeBytes)
 {
-    kaddr It = Tools::getPtr(FNamePool + Offsets::FNamePoolToBlocks + (blockId * Offsets::PointerSize));
-    kaddr End = It + blockSize - Offsets::FNameEntryToString;
-    uint32 Block = blockId;
+    kaddr It = Tools::getPtr(block + (blockIdx * Offsets::Global::PointerSize));
+    kaddr End = It + blockSizeBytes - Offsets::FNameEntry::StringName;
+    uint32 Block = blockIdx;
     uint16 Offset = 0;
     while (It < End)
     {
         kaddr FNameEntry = It;
         int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
-        int StrLength = FNameEntryHeader >> Offsets::FNameEntryToLenBit;
+        int StrLength = FNameEntryHeader >> Offsets::FNameEntry::StringLenBit;
         if (StrLength)
         {
             bool wide = FNameEntryHeader & 1;
@@ -32,7 +59,7 @@ void DumpBlocks(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blo
                 {
                     std::string str;
                     uint32 key = (Block << 16 | Offset);
-                    kaddr StrPtr = FNameEntry + Offsets::FNameEntryToString;
+                    kaddr StrPtr = FNameEntry + Offsets::FNameEntry::StringName;
 
                     if (wide)
                     {
@@ -51,7 +78,6 @@ void DumpBlocks(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blo
 
                     gname << (wide ? "Wide" : "") << std::dec << "{" << StrLength << "} " << std::hex << "[" << key
                           << "]: " << str << std::endl;
-                    count++;
                 }
             }
             else
@@ -60,9 +86,9 @@ void DumpBlocks(std::ofstream &gname, uint32 &count, kaddr FNamePool, uint32 blo
             }
 
             // Next
-            Offset += StrLength / Offsets::FNameStride;
-            uint16 bytes = Offsets::FNameEntryToString + StrLength * (wide ? sizeof(wchar_t) : sizeof(char));
-            It += (bytes + Offsets::FNameStride - 1u) & ~(Offsets::FNameStride - 1u);
+            Offset += StrLength / Offsets::FNameEntryAllocator::Stride;
+            uint16 bytes = Offsets::FNameEntry::StringName + StrLength * (wide ? sizeof(wchar_t) : sizeof(char));
+            It += (bytes + Offsets::FNameEntryAllocator::Stride - 1u) & ~(Offsets::FNameEntryAllocator::Stride - 1u);
         }
         else
         { // Null-terminator entry found
@@ -78,29 +104,20 @@ void DumpStrings(std::string outputpath)
     if (gname.is_open())
     {
         std::cout << "[1] Dumping Strings ---" << std::endl;
-        kaddr FNamePool = Tools::getRealOffset(Offsets::GName) + Offsets::GNamesToFNamePool;
-
-        uint32 BlockSize = Offsets::FNameStride * 65536;
-        uint32 CurrentBlock = Tools::Read<uint32>(FNamePool + Offsets::FNamePoolToCurrentBlock);
-        uint32 CurrentByteCursor = Tools::Read<uint32>(FNamePool + Offsets::FNamePoolToCurrentByteCursor);
+        kaddr fNameEntryAllocator = Tools::getRealOffset(Offsets::Global::GName) + Offsets::FNamePool::Entries;
+        uint32 currentBlock = Tools::Read<uint32>(fNameEntryAllocator + Offsets::FNameEntryAllocator::CurrentBlock);
+        uint32 currentByteCursor =
+            Tools::Read<uint32>(fNameEntryAllocator + Offsets::FNameEntryAllocator::CurrentByteCursor);
+        kaddr block = fNameEntryAllocator + Offsets::FNameEntryAllocator::Blocks;
 
         // All Blocks Except Current
-        for (uint32 BlockIdx = 0; BlockIdx < CurrentBlock; ++BlockIdx)
+        for (uint32 BlockIdx = 0; BlockIdx < currentBlock; ++BlockIdx)
         {
-            DumpBlocks(gname, count, FNamePool, BlockIdx, BlockSize);
+            DumpBlocks(gname, block, BlockIdx, Offsets::FNameEntryAllocator::BlockSizeBytes);
         }
-
+        gname << "last_block: " << "CurrentBlock: " << currentBlock << " CurrentByteCursor: " << currentByteCursor
+              << std::endl;
         // Last Block
-        DumpBlocks(gname, count, FNamePool, CurrentBlock, CurrentByteCursor);
-        // for (uint32 i = 0; i < GNameLimit; i++)
-        // {
-        //     std::string s = GetFNameFromID(i);
-        //     if (!s.empty())
-        //     {
-        //         // gname << "[" << i << "]: " << s << std::endl;
-        //         std::cout << "[" << i << "]: " << s << std::endl;
-        //         count++;
-        //     }
-        // }
+        DumpBlocks(gname, block, currentBlock, currentByteCursor);
     }
 }
