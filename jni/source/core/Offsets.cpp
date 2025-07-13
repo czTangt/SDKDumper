@@ -32,8 +32,13 @@ namespace FNameEntry
 {
 kaddr FNameEntryHeader = 0;
 kaddr StringName = 0;
-kaddr StringLenBit = 0;
+
 } // namespace FNameEntry
+
+namespace FNameEntryHeader
+{
+kaddr StringLenBit = 0;
+} // namespace FNameEntryHeader
 
 void initOffsets()
 {
@@ -54,6 +59,7 @@ void initOffsets()
 
     FNameEntry::FNameEntryHeader = 0x0; // 0x2
     FNameEntry::StringName = 0x2;       // 0x400
-    FNameEntry::StringLenBit = 0x6;
+
+    FNameEntryHeader::StringLenBit = 6;
 }
 } // namespace Offsets

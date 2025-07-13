@@ -41,6 +41,11 @@ extern kaddr StringName;
 extern kaddr StringLenBit;
 } // namespace FNameEntry
 
+namespace FNameEntryHeader
+{
+extern kaddr StringLenBit;
+} // namespace FNameEntryHeader
+
 void initOffsets();
 
 } // namespace Offsets

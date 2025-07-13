@@ -11,8 +11,6 @@ extern uint32 GNameLimit;
 
 void DumpStrings(std::string outputpath);
 
-std::string GetFNameFromID(uint32 index);
-
 void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSize);
 
 struct WideStr

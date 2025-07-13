@@ -1,52 +1,16 @@
 #include "FNames.h"
 #include "Config.h"
 
-uint32 GNameLimit = 170000;
-
-// std::string GetFNameFromID(uint32 index)
-// {
-//     uint32 Block = index >> 16;
-//     uint16 Offset = index & 65535;
-
-//     kaddr FNamePool = Tools::getRealOffset(Offsets::GName) + Offsets::GNamesToFNamePool;
-
-//     kaddr NamePoolChunk = Tools::getPtr(FNamePool + Offsets::FNamePoolToBlocks + (Block * Offsets::PointerSize));
-//     kaddr FNameEntry = NamePoolChunk + (Offsets::FNameStride * Offset);
-
-//     int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
-//     kaddr StrPtr = FNameEntry + Offsets::FNameEntryToString;
-//     int StrLength = FNameEntryHeader >> Offsets::FNameEntryToLenBit;
-
-//     /// Unicode Dumping Not Supported Yet
-//     if (StrLength > 0 && StrLength < 250)
-//     {
-//         bool wide = FNameEntryHeader & 1;
-//         if (wide)
-//         {
-//             return WideStr::getString(StrPtr, StrLength);
-//         }
-//         else
-//         {
-//             return Tools::readFixedString(StrPtr, StrLength);
-//         }
-//     }
-//     else
-//     {
-//         return "None";
-//     }
-// }
-
 void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSizeBytes)
 {
     kaddr It = Tools::getPtr(block + (blockIdx * Offsets::Global::PointerSize));
     kaddr End = It + blockSizeBytes - Offsets::FNameEntry::StringName;
-    uint32 Block = blockIdx;
     uint16 Offset = 0;
     while (It < End)
     {
         kaddr FNameEntry = It;
         int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
-        int StrLength = FNameEntryHeader >> Offsets::FNameEntry::StringLenBit;
+        int StrLength = FNameEntryHeader >> Offsets::FNameEntryHeader::StringLenBit;
         if (StrLength)
         {
             bool wide = FNameEntryHeader & 1;
@@ -55,10 +19,10 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
             if (StrLength > 0)
             {
                 // String Length Limit
-                if (StrLength < 250)
+                if (StrLength < 256)
                 {
                     std::string str;
-                    uint32 key = (Block << 16 | Offset);
+                    uint32 key = (blockIdx << 16 | Offset);
                     kaddr StrPtr = FNameEntry + Offsets::FNameEntry::StringName;
 
                     if (wide)
@@ -76,19 +40,25 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
                                   << key << "]: " << str << std::endl;
                     }
 
-                    gname << (wide ? "Wide" : "") << std::dec << "{" << StrLength << "} " << std::hex << "[" << key
-                          << "]: " << str << std::endl;
+                    gname << "[" << std::setw(6) << std::right << std::hex << key << "]\t" << std::setw(4) << std::left
+                          << (wide ? "Wide\t" : "Ansi\t") << "{" << std::setw(2) << std::right << StrLength << "}\t"
+                          << str << std::endl;
                 }
             }
             else
             {
-                StrLength = -StrLength; // Negative lengths are for Unicode Characters
+                StrLength = -StrLength;
             }
 
             // Next
-            Offset += StrLength / Offsets::FNameEntryAllocator::Stride;
-            uint16 bytes = Offsets::FNameEntry::StringName + StrLength * (wide ? sizeof(wchar_t) : sizeof(char));
-            It += (bytes + Offsets::FNameEntryAllocator::Stride - 1u) & ~(Offsets::FNameEntryAllocator::Stride - 1u);
+            uint16 totalBytes = Offsets::FNameEntry::StringName + StrLength * (wide ? sizeof(wchar_t) : sizeof(char));
+            uint32 alignedBytes =
+                (totalBytes + Offsets::FNameEntryAllocator::Stride - 1u) & ~(Offsets::FNameEntryAllocator::Stride - 1u);
+
+            It += alignedBytes;
+            // BlockSizeBytes = Stride * FNameBlockOffsets 为 2 * 0x10000，因此除以 Stride 保证 offset 在一个 block 内部
+            // 真实的块内偏移为 Offset * 2
+            Offset += alignedBytes / Offsets::FNameEntryAllocator::Stride;
         }
         else
         { // Null-terminator entry found
@@ -115,8 +85,6 @@ void DumpStrings(std::string outputpath)
         {
             DumpBlocks(gname, block, BlockIdx, Offsets::FNameEntryAllocator::BlockSizeBytes);
         }
-        gname << "last_block: " << "CurrentBlock: " << currentBlock << " CurrentByteCursor: " << currentByteCursor
-              << std::endl;
         // Last Block
         DumpBlocks(gname, block, currentBlock, currentByteCursor);
     }
