@@ -6,6 +6,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <sys/syscall.h>
 #include <sys/uio.h>
@@ -40,10 +41,8 @@ ModuleRange getModuleRange(pid_t pid, const char *module_name);
 // convert a kaddr offset to a real memory address.
 kaddr getHexAddr(const char *addr);
 
-// read a C-style string from a given address.
-std::string readCString(kaddr address, unsigned int maxSize);
-// read a fixed-length string from a given address.
-std::string readFixedString(kaddr address, unsigned int size);
+// read a string from a given address with a specified size.
+std::string readString(kaddr address, unsigned int size);
 
 // convert a kaddr offset to a real memory address.
 kaddr getRealOffset(kaddr offset);

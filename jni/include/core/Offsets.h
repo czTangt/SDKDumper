@@ -5,13 +5,14 @@
 
 namespace Offsets
 {
+
 // Global Offsets
 namespace Global
 {
-extern kaddr GWorld;
-extern kaddr GName;
-extern kaddr GUObjectArray;
-extern kaddr PointerSize;
+inline kaddr GWorld;
+inline kaddr GName;
+inline kaddr GUObjectArray;
+inline kaddr PointerSize;
 } // namespace Global
 
 //---------SDK-----------//
@@ -21,32 +22,71 @@ static constexpr kaddr FNameBlockOffsets = 1 << FNameBlockOffsetBits;
 
 namespace FNamePool
 {
-extern kaddr Entries;
+inline kaddr Entries;
 } // namespace FNamePool
 
 namespace FNameEntryAllocator
 {
-extern kaddr Stride;
-extern kaddr BlockSizeBytes;
-extern kaddr Lock;
-extern kaddr CurrentBlock;
-extern kaddr CurrentByteCursor;
-extern kaddr Blocks;
+inline kaddr Stride;
+inline kaddr BlockSizeBytes;
+inline kaddr Lock;
+inline kaddr CurrentBlock;
+inline kaddr CurrentByteCursor;
+inline kaddr Blocks;
 } // namespace FNameEntryAllocator
 
 namespace FNameEntry
 {
-extern kaddr FNameEntryHeader;
-extern kaddr StringName;
-extern kaddr StringLenBit;
+inline kaddr Header;
+inline kaddr StringName;
+inline kaddr StringLenBit;
 } // namespace FNameEntry
 
 namespace FNameEntryHeader
 {
-extern kaddr StringLenBit;
+inline kaddr bIsWide;
+inline kaddr StringLenBit;
 } // namespace FNameEntryHeader
 
-void initOffsets();
+namespace UWorld
+{
+inline kaddr PersistentLevel;
+} // namespace UWorld
+
+namespace ULevel
+{
+inline kaddr AActors;
+inline kaddr ActorsCount;
+} // namespace ULevel
+
+inline void initOffsets()
+{
+    // Global Offsets
+    Global::PointerSize = 0x8;
+
+    //---------SDK-----------//
+    // UnrealNames.cpp
+    FNamePool::Entries = 0x0;
+
+    FNameEntryAllocator::Stride = 0x2;
+    FNameEntryAllocator::BlockSizeBytes = FNameEntryAllocator::Stride * FNameBlockOffsets;
+
+    FNameEntryAllocator::Lock = 0x0;               // 0x38
+    FNameEntryAllocator::CurrentBlock = 0x38;      // 0x4
+    FNameEntryAllocator::CurrentByteCursor = 0x3C; // 0x4
+    FNameEntryAllocator::Blocks = 0x40;            // 0x10000
+
+    FNameEntry::Header = 0x0;     // 0x2
+    FNameEntry::StringName = 0x2; // 0x400
+
+    FNameEntryHeader::bIsWide = 1;
+    FNameEntryHeader::StringLenBit = 6;
+
+    // World
+    UWorld::PersistentLevel = 0x30; // 0x8
+    ULevel::AActors = 0x98;         // 0x8
+    ULevel::ActorsCount = 0xa0;     // 0x4
+}
 
 } // namespace Offsets
 

@@ -1,17 +1,5 @@
-#ifndef FNAMES_H
-#define FNAMES_H
-
-#include <iostream>
-#include <string>
-
-#include "Offsets.h"
-#include "Tools.h"
-
-extern uint32 GNameLimit;
-
-void DumpStrings(std::string outputpath);
-
-void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSize);
+#ifndef STRUCTS_H
+#define STRUCTS_H
 
 struct WideStr
 {
@@ -60,7 +48,7 @@ struct WideStr
         return output;
     }
 
-    static std::string getString(kaddr StrPtr, int StrLength)
+    static std::string readString(kaddr StrPtr, int StrLength)
     {
         std::wstring str = w_str(StrPtr, StrLength);
 
@@ -71,4 +59,21 @@ struct WideStr
         return result;
     }
 };
-#endif // FNAMES_H
+
+// struct UObject
+// {
+//     static kaddr getClass(kaddr object)
+//     { // UClass*
+//         return getPtr(object + Offsets::UObjectToClassPrivate);
+//     }
+//     static uint32 getNameID(kaddr object)
+//     {
+//         return Read<uint32>(object + Offsets::UObjectToFNameIndex);
+//     }
+//     static bool isValid(kaddr object)
+//     {
+//         return (object > 0 && getNameID(object) > 0 && getClass(object) > 0);
+//     }
+// }
+
+#endif // STRUCTS_H

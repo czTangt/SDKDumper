@@ -119,23 +119,7 @@ kaddr getHexAddr(const char *addr)
     return (kaddr)strtoul(addr, nullptr, 16);
 }
 
-std::string readCString(kaddr address, unsigned int maxSize)
-{
-    std::string result;
-    result.reserve(maxSize);
-
-    for (unsigned int i = 0; i < maxSize; ++i)
-    {
-        char ch = 0;
-        vm_readv(reinterpret_cast<void *>(address + i), &ch, sizeof(char));
-        if (ch == '\0')
-            break;
-        result.push_back(ch);
-    }
-    return result;
-}
-
-std::string readFixedString(kaddr address, unsigned int size)
+std::string readString(kaddr address, unsigned int size)
 {
     std::string result(size, '\0');
     vm_readv(reinterpret_cast<void *>(address), result.data(), size);

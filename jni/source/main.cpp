@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "Config.h"
-#include "FNames.h"
+#include "SDK.h"
 #include "Tools.h"
 
 using namespace std;
@@ -26,6 +26,7 @@ string pkg("com.tencent.ace.match2024");
 string outputpath("/data/local/tmp/match2024");
 static const char *lib_name = "libUE4.so";
 bool isStrDump = false;
+bool isActorDump = false;
 bool isVerbose = false;
 
 int main(int argc, char *argv[])
@@ -64,11 +65,16 @@ int main(int argc, char *argv[])
     Offsets::initOffsets();
 
     // get strings dump
-    isStrDump = true;
+    isStrDump = false;
     Offsets::Global::GName = Tools::getHexAddr("0x0B171CC0");
     if (isStrDump)
-    {
         DumpStrings(outputpath);
-    }
+
+    // get actors dump
+    isActorDump = true;
+    Offsets::Global::GWorld = Tools::getHexAddr("0x0B32D8A8");
+    if (isActorDump)
+        DumpActors(outputpath);
+
     return 0;
 }
