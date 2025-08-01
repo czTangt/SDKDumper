@@ -60,20 +60,32 @@ struct WideStr
     }
 };
 
-// struct UObject
-// {
-//     static kaddr getClass(kaddr object)
-//     { // UClass*
-//         return getPtr(object + Offsets::UObjectToClassPrivate);
-//     }
-//     static uint32 getNameID(kaddr object)
-//     {
-//         return Read<uint32>(object + Offsets::UObjectToFNameIndex);
-//     }
-//     static bool isValid(kaddr object)
-//     {
-//         return (object > 0 && getNameID(object) > 0 && getClass(object) > 0);
-//     }
-// }
+struct UObject
+{
+    static kaddr getClass(kaddr object)
+    { // UClass*
+        return Tools::getPtr(object + Offsets::UObjectBase::ClassPrivate);
+    }
+
+    static uint32 getNameID(kaddr object)
+    {
+        return Tools::Read<uint32>(object + Offsets::UObjectBase::NamePrivate + Offsets::FName::ComparisonIndex);
+    }
+
+    static bool isValid(kaddr object)
+    {
+        return (object > 0 && getNameID(object) > 0 && getClass(object) > 0);
+    }
+
+    static std::string getName(kaddr object)
+    {
+        return GetFNameFromID(getNameID(object));
+    }
+
+    static std::string getClassName(kaddr object)
+    {
+        return getName(getClass(object));
+    }
+};
 
 #endif // STRUCTS_H

@@ -28,6 +28,7 @@ static const char *lib_name = "libUE4.so";
 bool isStrDump = false;
 bool isActorDump = false;
 bool isVerbose = false;
+bool isObjectDump = false;
 
 int main(int argc, char *argv[])
 {
@@ -75,6 +76,12 @@ int main(int argc, char *argv[])
     Offsets::Global::GWorld = Tools::getHexAddr("0x0B32D8A8");
     if (isActorDump)
         DumpActors(outputpath);
+
+    // get objects dump
+    isObjectDump = false;
+    Offsets::Global::GUObjectArray = Tools::getHexAddr("0xB1B5F98");
+    if (isObjectDump)
+        DumpObjects(outputpath);
 
     return 0;
 }

@@ -61,12 +61,15 @@ void DumpStrings(std::string outputpath)
     std::ofstream gname(outputpath + "/Strings.txt", std::ofstream::out);
     if (gname.is_open())
     {
-        std::cout << "[1] Dumping Strings ---" << std::endl;
         kaddr FNameEntryAllocator = Tools::getRealOffset(Offsets::Global::GName) + Offsets::FNamePool::Entries;
         uint32 CurrentBlock = Tools::Read<uint32>(FNameEntryAllocator + Offsets::FNameEntryAllocator::CurrentBlock);
         uint32 CurrentByteCursor =
             Tools::Read<uint32>(FNameEntryAllocator + Offsets::FNameEntryAllocator::CurrentByteCursor);
         kaddr Block = FNameEntryAllocator + Offsets::FNameEntryAllocator::Blocks;
+
+        std::cout << "[1] Dumping Strings ---" << std::endl;
+        std::cout << "Total Blocks: " << std::dec << (CurrentBlock + 1) << std::endl;
+        std::cout << "Strings Format: [Key]\tType\t{Length}\tString" << std::endl;
 
         // All Blocks Except Current
         for (uint32 BlockIdx = 0; BlockIdx < CurrentBlock; ++BlockIdx)
@@ -91,7 +94,7 @@ std::string GetFNameFromID(uint32 index)
     int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
 
     kaddr StrPtr = FNameEntry + Offsets::FNameEntry::StringName;
-    int StrLength = FNameEntryHeader >> Offsets::FNameBlockOffsetBits;
+    int StrLength = FNameEntryHeader >> Offsets::FNameEntryHeader::StringLenBit;
     if (StrLength > 0 && StrLength < 256)
     {
         bool wide = FNameEntryHeader & Offsets::FNameEntryHeader::bIsWide;
@@ -110,21 +113,65 @@ std::string GetFNameFromID(uint32 index)
     }
 }
 
-// void DumpActors(std::string outputpath)
-// {
-//     std::ofstream gname(outputpath + "/Actors.txt", std::ofstream::out);
-//     if (gname.is_open())
-//     {
-//         std::cout << "[2] Dumping Actors ---" << std::endl;
-//         kaddr word = Tools::getPtr(Tools::getRealOffset(Offsets::Global::GWorld));
-//         kaddr level = Tools::getPtr(word + Offsets::UWorld::PersistentLevel);
+void DumpActors(std::string outputpath)
+{
+    std::ofstream gname(outputpath + "/Actors.txt", std::ofstream::out);
+    if (gname.is_open())
+    {
+        kaddr word = Tools::getPtr(Tools::getRealOffset(Offsets::Global::GWorld));
+        kaddr level = Tools::getPtr(word + Offsets::UWorld::PersistentLevel);
 
-//         kaddr actorsArray = Tools::getPtr(level + Offsets::ULevel::AActors);
-//         uint32 actorsCount = Tools::Read<uint32>(level + Offsets::ULevel::ActorsCount);
+        kaddr actorsArray = Tools::getPtr(level + Offsets::ULevel::AActors);
+        uint32 actorsCount = Tools::Read<uint32>(level + Offsets::ULevel::ActorsCount);
 
-//         for (int i = 0; i < actorsCount; i++)
-//         {
-//             kaddr actor = Tools::getPtr(actorsArray + (i * Offsets::Global::PointerSize));
-//         }
-//     }
-// }
+        std::cout << "[2] Dumping Actors ---" << std::endl;
+        std::cout << "Total Actors: " << actorsCount << std::endl;
+
+        for (int i = 0; i < actorsCount; i++)
+        {
+            kaddr actor = Tools::getPtr(actorsArray + (i * Offsets::Global::PointerSize));
+            if (UObject::isValid(actor))
+            {
+                gname << "Id: " << std::setbase(10) << i << ", Addr: " << std::setbase(16) << "0x" << actor
+                      << ", ActorName: " << UObject::getName(actor) << std::endl;
+            }
+        }
+    }
+}
+
+void DumpObjects(std::string outputpath)
+{
+    std::ofstream gname(outputpath + "/Objects.txt", std::ofstream::out);
+    if (gname.is_open())
+    {
+        int32 count = Tools::Read<int32>(Tools::getRealOffset(Offsets::Global::GUObjectArray) +
+                                         Offsets::FUObjectArray::ObjObjects + Offsets::TUObjectArray::NumElements);
+
+        std::cout << "[3] Dumping Objects ---" << std::endl;
+        std::cout << "Total Objects: " << count << std::endl;
+
+        if (count < 10 || count > 999999)
+        {
+            count = 300000;
+        }
+
+        for (int32 i = 0; i < count; i++)
+        {
+            kaddr TUObjectArray = Tools::getPtr(Tools::getRealOffset(Offsets::Global::GUObjectArray) +
+                                                Offsets::FUObjectArray::ObjObjects);
+            kaddr Chunk =
+                Tools::getPtr(TUObjectArray + ((i / Offsets::NumElementsPerChunk) * Offsets::Global::PointerSize));
+            kaddr uobj = Tools::getPtr(Chunk + ((i % Offsets::NumElementsPerChunk) * Offsets::FUObjectItem::Size));
+
+            if (UObject::isValid(uobj))
+            {
+                gname << std::setbase(16) << "[0x" << i << "]:" << std::endl;
+                gname << "Name: " << UObject::getName(uobj).c_str() << std::endl;
+                gname << "Class: " << UObject::getClassName(uobj).c_str() << std::endl;
+                gname << "ObjectPtr: 0x" << std::setbase(16) << uobj << std::endl;
+                gname << "ClassPtr: 0x" << std::setbase(16) << UObject::getClass(uobj) << std::endl;
+                gname << std::endl;
+            }
+        }
+    }
+}

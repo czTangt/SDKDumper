@@ -12,4 +12,6 @@ std::string GetFNameFromID(uint32 index);
 
 void DumpActors(std::string outputpath);
 
+void DumpObjects(std::string outputpath);
+
 #endif // DUMP_H
