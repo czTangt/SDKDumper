@@ -1,6 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+// 宽字符处理工具
 struct WideStr
 {
     static constexpr size_t MAX_SIZE = 100;
@@ -60,6 +61,7 @@ struct WideStr
     }
 };
 
+// UObject 工具函数
 struct UObject
 {
     static kaddr getClass(kaddr object)
@@ -85,6 +87,110 @@ struct UObject
     static std::string getClassName(kaddr object)
     {
         return getName(getClass(object));
+    }
+};
+
+// UStruct 工具函数
+struct UStruct
+{
+    static kaddr getSuperClass(kaddr structz)
+    { // UStruct* -> 该结构体的父类
+        return Tools::getPtr(structz + Offsets::UStruct::SuperStruct);
+    }
+
+    static kaddr getChildren(kaddr structz)
+    { // UField* -> 该结构体的方法
+        return Tools::getPtr(structz + Offsets::UStruct::Children);
+    }
+
+    static kaddr getChildProperties(kaddr structz)
+    { // FField* -> 该结构体的属性
+        return Tools::getPtr(structz + Offsets::UStruct::ChildProperties);
+    }
+
+    static std::string getClassName(kaddr clazz)
+    {
+        return UObject::getName(clazz);
+    }
+
+    static std::string getClassPath(kaddr object)
+    { // 获取当前对象的完全类限定符
+        kaddr clazz = UObject::getClass(object);
+        std::string classname = UObject::getName(clazz);
+
+        kaddr superclass = getSuperClass(clazz);
+        while (superclass)
+        {
+            classname += ".";
+            classname += UObject::getName(superclass);
+
+            superclass = getSuperClass(superclass);
+        }
+
+        return classname;
+    }
+
+    static std::string getStructClassPath(kaddr clazz)
+    { // 获取当前类的完全类限定符
+        std::string classname = UObject::getName(clazz);
+
+        kaddr superclass = getSuperClass(clazz);
+        while (superclass)
+        {
+            classname += ".";
+            classname += UObject::getName(superclass);
+
+            superclass = getSuperClass(superclass);
+        }
+
+        return classname;
+    }
+};
+
+// FField 工具函数
+struct FField
+{
+    static std::string getName(kaddr fField)
+    { // FName -> 该字段的名称
+        return GetFNameFromID(Tools::Read<uint32>(fField + Offsets::FField::NamePrivate));
+    }
+
+    static std::string getClassName(kaddr fField)
+    { // FFieldClass* -> 该字段的类型名称
+        return GetFNameFromID(Tools::Read<uint32>(Tools::getPtr(fField + Offsets::FField::ClassPrivate)));
+    }
+
+    static kaddr getNext(kaddr fField)
+    { // FField* -> 下一个 FField* 对象
+        return Tools::getPtr(fField + Offsets::FField::Next);
+    }
+};
+
+// FProperty 工具函数
+struct FProperty
+{
+    static int32 getElementSize(kaddr prop)
+    {
+        return Tools::Read<int32>(prop + Offsets::FProperty::ElementSize);
+    }
+
+    static uint64 getPropertyFlags(kaddr prop)
+    {
+        return Tools::Read<uint64>(prop + Offsets::FProperty::PropertyFlags);
+    }
+
+    static int32 getOffset(kaddr prop)
+    {
+        return Tools::Read<int32>(prop + Offsets::FProperty::Offset_Internal);
+    }
+};
+
+// FObjectProperty 工具函数
+struct FObjectProperty
+{
+    static kaddr getPropertyClass(kaddr prop)
+    { // class UClass*
+        return Tools::getPtr(prop + Offsets::FObjectProperty::PropertyClass);
     }
 };
 

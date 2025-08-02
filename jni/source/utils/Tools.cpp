@@ -140,4 +140,17 @@ uint8 getUInt8(kaddr address)
 {
     return Read<uint8>(address);
 }
+
+bool isEqual(std::string s1, const char *check)
+{
+    std::string s2(check);
+    return (s1 == s2);
+}
+
+bool isContain(std::string str, std::string check)
+{
+    size_t found = str.find(check);
+    return (found != std::string::npos);
+}
+
 } // namespace Tools

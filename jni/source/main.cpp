@@ -29,6 +29,7 @@ bool isStrDump = false;
 bool isActorDump = false;
 bool isVerbose = false;
 bool isObjectDump = false;
+bool isSDKDump = false;
 
 int main(int argc, char *argv[])
 {
@@ -72,7 +73,7 @@ int main(int argc, char *argv[])
         DumpStrings(outputpath);
 
     // get actors dump
-    isActorDump = true;
+    isActorDump = false;
     Offsets::Global::GWorld = Tools::getHexAddr("0x0B32D8A8");
     if (isActorDump)
         DumpActors(outputpath);
@@ -82,6 +83,11 @@ int main(int argc, char *argv[])
     Offsets::Global::GUObjectArray = Tools::getHexAddr("0xB1B5F98");
     if (isObjectDump)
         DumpObjects(outputpath);
+
+    // get SDK dump
+    isSDKDump = true;
+    if (isSDKDump)
+        DumpSDK(outputpath);
 
     return 0;
 }

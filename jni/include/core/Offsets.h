@@ -91,6 +91,32 @@ inline kaddr ClassPrivate;
 inline kaddr NamePrivate;
 } // namespace UObjectBase
 
+namespace UStruct
+{
+inline kaddr SuperStruct;
+inline kaddr Children;
+inline kaddr ChildProperties;
+} // namespace UStruct
+
+namespace FField
+{
+inline kaddr ClassPrivate;
+inline kaddr Next;
+inline kaddr NamePrivate;
+} // namespace FField
+
+namespace FObjectProperty
+{
+inline kaddr PropertyClass;
+} // namespace FObjectProperty
+
+namespace FProperty
+{
+inline kaddr ElementSize;
+inline kaddr PropertyFlags;
+inline kaddr Offset_Internal;
+} // namespace FProperty
+
 inline void initOffsets()
 {
     // Global Offsets
@@ -102,18 +128,14 @@ inline void initOffsets()
 
     // UnrealNames.cpp
     FNamePool::Entries = 0x0;
-
     FNameEntryAllocator::Stride = 0x2;
     FNameEntryAllocator::BlockSizeBytes = FNameEntryAllocator::Stride * FNameBlockOffsets;
-
     FNameEntryAllocator::Lock = 0x0;               // 0x38
     FNameEntryAllocator::CurrentBlock = 0x38;      // 0x4
     FNameEntryAllocator::CurrentByteCursor = 0x3C; // 0x4
     FNameEntryAllocator::Blocks = 0x40;            // 0x10000
-
-    FNameEntry::Header = 0x0;     // 0x2
-    FNameEntry::StringName = 0x2; // 0x400
-
+    FNameEntry::Header = 0x0;                      // 0x2
+    FNameEntry::StringName = 0x2;                  // 0x400
     FNameEntryHeader::bIsWide = 1;
     FNameEntryHeader::StringLenBit = 6;
 
@@ -133,6 +155,22 @@ inline void initOffsets()
     // UObjectBase.h
     UObjectBase::ClassPrivate = 0x10; // 0x8
     UObjectBase::NamePrivate = 0x18;  // 0x8
+
+    // Class.h
+    UStruct::SuperStruct = 0x40;     // 0x8
+    UStruct::Children = 0x48;        // 0x8
+    UStruct::ChildProperties = 0x50; // 0x8
+
+    // FField.h
+    FField::ClassPrivate = 0x8; // 0x8
+    FField::Next = 0x20;        // 0x8
+    FField::NamePrivate = 0x28; // 0x8
+
+    FObjectProperty::PropertyClass = 0x78; // 0x8
+
+    FProperty::ElementSize = 0x38;     // 0x4
+    FProperty::PropertyFlags = 0x40;   // 0x8
+    FProperty::Offset_Internal = 0x4C; // 0x4
 }
 
 } // namespace Offsets

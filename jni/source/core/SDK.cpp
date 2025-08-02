@@ -115,8 +115,8 @@ std::string GetFNameFromID(uint32 index)
 
 void DumpActors(std::string outputpath)
 {
-    std::ofstream gname(outputpath + "/Actors.txt", std::ofstream::out);
-    if (gname.is_open())
+    std::ofstream actorlist(outputpath + "/Actors.txt", std::ofstream::out);
+    if (actorlist.is_open())
     {
         kaddr word = Tools::getPtr(Tools::getRealOffset(Offsets::Global::GWorld));
         kaddr level = Tools::getPtr(word + Offsets::UWorld::PersistentLevel);
@@ -132,45 +132,141 @@ void DumpActors(std::string outputpath)
             kaddr actor = Tools::getPtr(actorsArray + (i * Offsets::Global::PointerSize));
             if (UObject::isValid(actor))
             {
-                gname << "Id: " << std::setbase(10) << i << ", Addr: " << std::setbase(16) << "0x" << actor
-                      << ", ActorName: " << UObject::getName(actor) << std::endl;
+                actorlist << "Id: " << std::setbase(10) << i << ", Addr: " << std::setbase(16) << "0x" << actor
+                          << ", ActorName: " << UObject::getName(actor) << std::endl;
             }
         }
     }
 }
 
+kaddr GetUObjectFromID(uint32 index)
+{
+    kaddr TUObjectArray =
+        Tools::getPtr(Tools::getRealOffset(Offsets::Global::GUObjectArray) + Offsets::FUObjectArray::ObjObjects);
+    kaddr Chunk =
+        Tools::getPtr(TUObjectArray + ((index / Offsets::NumElementsPerChunk) * Offsets::Global::PointerSize));
+    return Tools::getPtr(Chunk + ((index % Offsets::NumElementsPerChunk) * Offsets::FUObjectItem::Size));
+}
+
+int32 GetObjectCount()
+{
+    return Tools::Read<int32>(Tools::getRealOffset(Offsets::Global::GUObjectArray) +
+                              Offsets::FUObjectArray::ObjObjects + Offsets::TUObjectArray::NumElements);
+}
+
 void DumpObjects(std::string outputpath)
 {
-    std::ofstream gname(outputpath + "/Objects.txt", std::ofstream::out);
-    if (gname.is_open())
+    std::ofstream obj(outputpath + "/Objects.txt", std::ofstream::out);
+    if (obj.is_open())
     {
-        int32 count = Tools::Read<int32>(Tools::getRealOffset(Offsets::Global::GUObjectArray) +
-                                         Offsets::FUObjectArray::ObjObjects + Offsets::TUObjectArray::NumElements);
-
-        std::cout << "[3] Dumping Objects ---" << std::endl;
-        std::cout << "Total Objects: " << count << std::endl;
-
+        int32 count = GetObjectCount();
         if (count < 10 || count > 999999)
         {
             count = 300000;
         }
 
+        std::cout << "[3] Dumping Objects ---" << std::endl;
+        std::cout << "Total Objects: " << count << std::endl;
+
         for (int32 i = 0; i < count; i++)
         {
-            kaddr TUObjectArray = Tools::getPtr(Tools::getRealOffset(Offsets::Global::GUObjectArray) +
-                                                Offsets::FUObjectArray::ObjObjects);
-            kaddr Chunk =
-                Tools::getPtr(TUObjectArray + ((i / Offsets::NumElementsPerChunk) * Offsets::Global::PointerSize));
-            kaddr uobj = Tools::getPtr(Chunk + ((i % Offsets::NumElementsPerChunk) * Offsets::FUObjectItem::Size));
-
+            kaddr uobj = GetUObjectFromID(i);
             if (UObject::isValid(uobj))
             {
-                gname << std::setbase(16) << "[0x" << i << "]:" << std::endl;
-                gname << "Name: " << UObject::getName(uobj).c_str() << std::endl;
-                gname << "Class: " << UObject::getClassName(uobj).c_str() << std::endl;
-                gname << "ObjectPtr: 0x" << std::setbase(16) << uobj << std::endl;
-                gname << "ClassPtr: 0x" << std::setbase(16) << UObject::getClass(uobj) << std::endl;
-                gname << std::endl;
+                obj << std::setbase(16) << "[0x" << i << "]:" << std::endl;
+                obj << "Name: " << UObject::getName(uobj).c_str() << std::endl;
+                obj << "Class: " << UObject::getClassName(uobj).c_str() << std::endl;
+                obj << "ObjectPtr: 0x" << std::setbase(16) << uobj << std::endl;
+                obj << "ClassPtr: 0x" << std::setbase(16) << UObject::getClass(uobj) << std::endl;
+                obj << std::endl;
+            }
+        }
+    }
+}
+
+std::vector<uint32> structIDMap;
+
+bool isScanned(uint32 id)
+{
+    for (int i = 0; i < structIDMap.size(); i++)
+    {
+        if (structIDMap[i] == id)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
+{
+    std::list<kaddr> recurrce;
+    kaddr child = childprop;
+    while (child)
+    {
+        kaddr prop = child;
+        std::string oname = FField::getName(prop);      // 成员变量名称
+        std::string cname = FField::getClassName(prop); // 成员变量类型名称
+
+        if (Tools::isEqual(cname, "ObjectProperty") || Tools::isEqual(cname, "WeakObjectProperty") ||
+            Tools::isEqual(cname, "LazyObjectProperty") || Tools::isEqual(cname, "AssetObjectProperty") ||
+            Tools::isEqual(cname, "SoftObjectProperty"))
+        {
+            kaddr propertyClass = FObjectProperty::getPropertyClass(prop);
+
+            sdk << "\t" << UObject::getName(propertyClass) << "* " << oname << ";"
+                << "//[Offset: 0x" << std::setbase(16) << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::setbase(16) << FProperty::getElementSize(prop) << "]" << std::endl;
+
+            recurrce.push_back(propertyClass);
+        }
+        child = FField::getNext(child);
+    }
+    return recurrce;
+}
+
+void writeStruct(std::ofstream &sdk, kaddr clazz)
+{
+    std::list<kaddr> recurrce;
+
+    kaddr currStruct = clazz;
+    while (UObject::isValid(currStruct))
+    {
+        std::string name = UObject::getName(currStruct);
+        if (Tools::isEqual(name, "None") || Tools::isContain(name, "/Game/") || Tools::isContain(name, "_png") ||
+            name.empty())
+        {
+            break;
+        }
+
+        uint32 NameID = UObject::getNameID(currStruct);
+        if (!isScanned(NameID))
+        {
+            structIDMap.push_back(NameID);
+            sdk << "Class: " << UStruct::getStructClassPath(currStruct) << std::endl;
+            recurrce.merge(writeStructChild(sdk, UStruct::getChildProperties(currStruct)));
+        }
+        currStruct = UStruct::getSuperClass(currStruct);
+    }
+}
+
+void DumpSDK(std::string outputpath)
+{
+    std::ofstream sdk(outputpath + "/SDK.txt", std::ofstream::out);
+    if (sdk.is_open())
+    {
+        std::cout << "[4] Dumping SDK ---" << std::endl;
+        int32 count = GetObjectCount();
+        if (count < 10 || count > 999999)
+        {
+            count = 300000;
+        }
+        for (int32 i = 0; i < count; i++)
+        {
+            kaddr uobj = GetUObjectFromID(i);
+            if (UObject::isValid(uobj))
+            {
+                writeStruct(sdk, UObject::getClass(uobj));
             }
         }
     }

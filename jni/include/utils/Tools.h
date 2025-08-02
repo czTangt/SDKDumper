@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <string>
 #include <sys/syscall.h>
 #include <sys/uio.h>
@@ -52,6 +53,11 @@ kaddr getPtr(kaddr address);
 int32 getInt32(kaddr address);
 // read an uint8 value from a given address.
 uint8 getUInt8(kaddr address);
+
+// check if a string is equal to a given C-style string.
+bool isEqual(std::string s1, const char *check);
+// check if a string contains a substring.
+bool isContain(std::string str, std::string check);
 
 // read single value
 template <typename T> T Read(kaddr address)

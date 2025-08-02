@@ -12,6 +12,16 @@ std::string GetFNameFromID(uint32 index);
 
 void DumpActors(std::string outputpath);
 
+kaddr GetUObjectFromID(uint32 index);
+
 void DumpObjects(std::string outputpath);
 
-#endif // DUMP_H
+int32 GetObjectCount();
+
+void DumpSDK(std::string outputpath);
+
+void writeStruct(std::ofstream &sdk, kaddr clazz);
+
+std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop);
+
+#endif // SDK_H
