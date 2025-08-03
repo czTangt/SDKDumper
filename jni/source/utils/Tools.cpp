@@ -153,4 +153,9 @@ bool isContain(std::string str, std::string check)
     return (found != std::string::npos);
 }
 
+bool isStartWith(std::string str, const char *check)
+{
+    return (str.rfind(check, 0) == 0);
+}
+
 } // namespace Tools

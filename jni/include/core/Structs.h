@@ -293,4 +293,25 @@ struct FEnumProperty
     }
 };
 
+struct UFunction
+{
+    static int32 getFunctionFlags(kaddr func)
+    {
+        return Tools::Read<int32>(func + Offsets::UFunction::FunctionFlags);
+    }
+
+    static kaddr getFunc(kaddr func)
+    {
+        return Tools::getPtr(func + Offsets::UFunction::Func);
+    }
+};
+
+struct UField
+{
+    static kaddr getNext(kaddr field)
+    { // UField*
+        return Tools::getPtr(field + Offsets::UField::Next);
+    }
+};
+
 #endif // STRUCTS_H

@@ -180,6 +180,17 @@ namespace FEnumProperty
 inline kaddr Enum;
 }
 
+namespace UFunction
+{
+inline kaddr FunctionFlags;
+inline kaddr Func;
+} // namespace UFunction
+
+namespace UField
+{
+inline kaddr Next;
+}
+
 inline void initOffsets()
 {
     // Global Offsets
@@ -228,6 +239,11 @@ inline void initOffsets()
     UStruct::SuperStruct = 0x40;     // 0x8
     UStruct::Children = 0x48;        // 0x8
     UStruct::ChildProperties = 0x50; // 0x8
+
+    UFunction::FunctionFlags = 0xB0; // 0x8
+    UFunction::Func = 0xD8;          // 0x8
+
+    UField::Next = 0x28; // 0x8
 
     // FField.h
     FField::ClassPrivate = 0x8; // 0x8

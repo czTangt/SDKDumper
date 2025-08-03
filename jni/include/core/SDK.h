@@ -24,6 +24,8 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop);
 
 void writeStruct(std::ofstream &sdk, kaddr clazz);
 
+std::list<kaddr> writeStructChild_Func(std::ofstream &sdk, kaddr childprop);
+
 std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop);
 
 #endif // SDK_H

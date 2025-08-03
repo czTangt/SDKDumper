@@ -212,27 +212,27 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
         {
             return "uint16";
         }
-        else if (Tools::isEqual(cname, "FUInt32Property"))
+        else if (Tools::isEqual(cname, "UInt32Property"))
         {
             return "uint32";
         }
-        else if (Tools::isEqual(cname, "FUInt64Property"))
+        else if (Tools::isEqual(cname, "UInt64Property"))
         {
             return "uint64";
         }
-        else if (Tools::isEqual(cname, "FInt8Property"))
+        else if (Tools::isEqual(cname, "Int8Property"))
         {
             return "int8";
         }
-        else if (Tools::isEqual(cname, "FInt16Property"))
+        else if (Tools::isEqual(cname, "Int16Property"))
         {
             return "int16";
         }
-        else if (Tools::isEqual(cname, "FIntProperty"))
+        else if (Tools::isEqual(cname, "IntProperty"))
         {
             return "int32";
         }
-        else if (Tools::isEqual(cname, "FInt64Property"))
+        else if (Tools::isEqual(cname, "Int64Property"))
         {
             return "int64";
         }
@@ -240,11 +240,11 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
         {
             return "bool";
         }
-        else if (Tools::isEqual(cname, "FFloatProperty"))
+        else if (Tools::isEqual(cname, "FloatProperty"))
         {
             return "float";
         }
-        else if (Tools::isEqual(cname, "FDoubleProperty"))
+        else if (Tools::isEqual(cname, "DoubleProperty"))
         {
             return "double";
         }
@@ -267,9 +267,9 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
         {
             kaddr interfaceClass = FInterfaceProperty::getInterfaceClass(prop);
             recurrce.push_back(interfaceClass);
-            return "interface class " + UObject::getName(interfaceClass);
+            return "interface class" + UObject::getName(interfaceClass);
         }
-        else if (Tools::isEqual(cname, "FNameProperty"))
+        else if (Tools::isEqual(cname, "NameProperty"))
         {
             return "FName";
         }
@@ -279,11 +279,11 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
             recurrce.push_back(Struct);
             return UObject::getName(Struct);
         }
-        else if (Tools::isEqual(cname, "FStrProperty"))
+        else if (Tools::isEqual(cname, "StrProperty"))
         {
             return "FString";
         }
-        else if (Tools::isEqual(cname, "FTextProperty"))
+        else if (Tools::isEqual(cname, "TextProperty"))
         {
             return "FText";
         }
@@ -304,6 +304,14 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
         {
             return "<" + resolveProp(recurrce, FSetProperty::getElementProp(prop)) + ">";
         }
+        else if (Tools::isEqual(cname, "EnumProperty"))
+        {
+            return "enum";
+        }
+        else
+        {
+            return FField::getName(prop) + "(" + cname + ")";
+        }
     }
     return "NULL";
 }
@@ -323,10 +331,10 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
             sdk << "\tbyte " << oname << " : enum"
                 << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
                 << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-            sdk << "\t{" << std::endl;
             kaddr enumObj = FByteProperty::getEnum(prop);
             if (UObject::isValid(enumObj))
             {
+                sdk << "\t{" << std::endl;
                 kaddr enumNamesArray = UEnum::getNameArray(enumObj);
                 for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
                 {
@@ -336,8 +344,8 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
                         Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
                     sdk << "\t\t" << GetFNameFromID(index) << " = " << enum_num << ";" << std::endl;
                 }
+                sdk << "\t}" << std::endl;
             }
-            sdk << "\t}" << std::endl;
         }
         else if (Tools::isEqual(cname, "UInt16Property"))
         {
@@ -524,6 +532,78 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
     return recurrce;
 }
 
+std::list<kaddr> writeStructChild_Func(std::ofstream &sdk, kaddr childprop)
+{
+    std::list<kaddr> recurrce;
+    kaddr child = childprop;
+    while (child)
+    {
+        kaddr prop = child;
+        std::string oname = UObject::getName(prop);
+        std::string cname = UObject::getClassName(prop);
+
+        if (Tools::isStartWith(cname, "Function") || Tools::isEqual(cname, "DelegateFunction"))
+        {
+            std::string returnVal = "void";
+            std::string params = "";
+
+            kaddr funcParam = UStruct::getChildProperties(prop);
+            while (funcParam)
+            {
+                uint64 PropertyFlags = FProperty::getPropertyFlags(funcParam);
+
+                if ((PropertyFlags & 0x0000000000000400) == 0x0000000000000400)
+                {
+                    returnVal = resolveProp(recurrce, funcParam);
+                }
+                else
+                {
+                    if ((PropertyFlags & 0x0000000000000100) == 0x0000000000000100)
+                    {
+                        params += "out ";
+                    }
+                    if ((PropertyFlags & 0x0000000000000002) == 0x0000000000000002)
+                    {
+                        params += "const ";
+                    }
+                    params += resolveProp(recurrce, funcParam);
+                    params += " ";
+                    params += FField::getName(funcParam);
+                    params += ", ";
+                }
+
+                funcParam = FField::getNext(funcParam);
+            }
+
+            if (!params.empty())
+            {
+                params.pop_back();
+                params.pop_back();
+            }
+
+            sdk << "\t";
+
+            int32 FunctionFlags = UFunction::getFunctionFlags(prop);
+
+            if ((FunctionFlags & 0x00002000) == 0x00002000)
+            {
+                sdk << "static" << " ";
+            }
+
+            sdk << returnVal << " " << oname << "(" << params << ");"
+                << "// 0x" << std::hex << (UFunction::getFunc(prop) - Tools::lib_range.base) << std::endl;
+        }
+        else
+        {
+            sdk << "\t" << cname << " " << oname << ";"
+                << "//[Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+
+        child = UField::getNext(child);
+    }
+    return recurrce;
+}
+
 void writeStruct(std::ofstream &sdk, kaddr clazz)
 {
     std::list<kaddr> recurrce;
@@ -544,10 +624,14 @@ void writeStruct(std::ofstream &sdk, kaddr clazz)
             structIDMap.push_back(NameID);
             sdk << "Class: " << UStruct::getStructClassPath(currStruct) << std::endl;
             recurrce.merge(writeStructChild(sdk, UStruct::getChildProperties(currStruct)));
-            sdk << "\n--------------------------------" << std::endl;
+            recurrce.merge(writeStructChild_Func(sdk, UStruct::getChildren(currStruct)));
+            sdk << "\n------------------------------------" << std::endl;
         }
         currStruct = UStruct::getSuperClass(currStruct);
     }
+
+    for (auto it = recurrce.begin(); it != recurrce.end(); ++it)
+        writeStruct(sdk, *it);
 }
 
 void DumpSDK(std::string outputpath)
