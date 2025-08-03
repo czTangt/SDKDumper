@@ -29,9 +29,9 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
                     else
                         str = Tools::readString(StrPtr, StrLength);
 
-                    gname << "[" << std::setw(6) << std::right << std::hex << key << "]\t" << std::setw(4) << std::left
-                          << (wide ? "Wide\t" : "Ansi\t") << "{" << std::setw(2) << std::right << StrLength << "}\t"
-                          << str << std::endl;
+                    gname << "[0x" << std::setfill('0') << std::setw(6) << std::hex << key << "]\t" << std::setw(4)
+                          << (wide ? "Wide\t" : "Ansi\t") << "{0x" << std::setfill('0') << std::setw(3) << StrLength
+                          << "}\t" << str << std::endl;
                 }
             }
             else
@@ -132,8 +132,8 @@ void DumpActors(std::string outputpath)
             kaddr actor = Tools::getPtr(actorsArray + (i * Offsets::Global::PointerSize));
             if (UObject::isValid(actor))
             {
-                actorlist << "Id: " << std::setbase(10) << i << ", Addr: " << std::setbase(16) << "0x" << actor
-                          << ", ActorName: " << UObject::getName(actor) << std::endl;
+                actorlist << "Id: " << std::setw(3) << std::right << std::setbase(10) << i << ", Addr: 0x" << std::hex
+                          << actor << ", ActorName: " << UObject::getName(actor) << std::endl;
             }
         }
     }
@@ -173,11 +173,11 @@ void DumpObjects(std::string outputpath)
             kaddr uobj = GetUObjectFromID(i);
             if (UObject::isValid(uobj))
             {
-                obj << std::setbase(16) << "[0x" << i << "]:" << std::endl;
-                obj << "Name: " << UObject::getName(uobj).c_str() << std::endl;
+                obj << "[0x" << std::setfill('0') << std::setw(5) << std::hex << i << "]:" << std::endl;
+                obj << "Name:  " << UObject::getName(uobj).c_str() << std::endl;
                 obj << "Class: " << UObject::getClassName(uobj).c_str() << std::endl;
-                obj << "ObjectPtr: 0x" << std::setbase(16) << uobj << std::endl;
-                obj << "ClassPtr: 0x" << std::setbase(16) << UObject::getClass(uobj) << std::endl;
+                obj << "ObjectPtr: 0x" << std::hex << uobj << std::endl;
+                obj << "ClassPtr:  0x" << std::hex << UObject::getClass(uobj) << std::endl;
                 obj << std::endl;
             }
         }
@@ -198,6 +198,116 @@ bool isScanned(uint32 id)
     return false;
 }
 
+std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
+{
+    if (prop)
+    {
+        std::string cname = FField::getClassName(prop);
+
+        if (Tools::isEqual(cname, "ByteProperty"))
+        {
+            return "byte";
+        }
+        else if (Tools::isEqual(cname, "UInt16Property"))
+        {
+            return "uint16";
+        }
+        else if (Tools::isEqual(cname, "FUInt32Property"))
+        {
+            return "uint32";
+        }
+        else if (Tools::isEqual(cname, "FUInt64Property"))
+        {
+            return "uint64";
+        }
+        else if (Tools::isEqual(cname, "FInt8Property"))
+        {
+            return "int8";
+        }
+        else if (Tools::isEqual(cname, "FInt16Property"))
+        {
+            return "int16";
+        }
+        else if (Tools::isEqual(cname, "FIntProperty"))
+        {
+            return "int32";
+        }
+        else if (Tools::isEqual(cname, "FInt64Property"))
+        {
+            return "int64";
+        }
+        else if (Tools::isEqual(cname, "BoolProperty"))
+        {
+            return "bool";
+        }
+        else if (Tools::isEqual(cname, "FFloatProperty"))
+        {
+            return "float";
+        }
+        else if (Tools::isEqual(cname, "FDoubleProperty"))
+        {
+            return "double";
+        }
+        else if (Tools::isEqual(cname, "ObjectProperty") || Tools::isEqual(cname, "WeakObjectProperty") ||
+                 Tools::isEqual(cname, "LazyObjectProperty") || Tools::isEqual(cname, "AssetObjectProperty") ||
+                 Tools::isEqual(cname, "SoftObjectProperty"))
+        {
+            kaddr propertyClass = FObjectProperty::getPropertyClass(prop);
+            recurrce.push_back(propertyClass);
+            return UObject::getName(propertyClass) + "*";
+        }
+        else if (Tools::isEqual(cname, "ClassProperty") || Tools::isEqual(cname, "AssetClassProperty") ||
+                 Tools::isEqual(cname, "SoftClassProperty"))
+        {
+            kaddr metaClass = FClassProperty::getMetaClass(prop);
+            recurrce.push_back(metaClass);
+            return "class " + UObject::getName(metaClass);
+        }
+        else if (Tools::isEqual(cname, "InterfaceProperty"))
+        {
+            kaddr interfaceClass = FInterfaceProperty::getInterfaceClass(prop);
+            recurrce.push_back(interfaceClass);
+            return "interface class " + UObject::getName(interfaceClass);
+        }
+        else if (Tools::isEqual(cname, "FNameProperty"))
+        {
+            return "FName";
+        }
+        else if (Tools::isEqual(cname, "StructProperty"))
+        {
+            kaddr Struct = FStructProperty::getStruct(prop);
+            recurrce.push_back(Struct);
+            return UObject::getName(Struct);
+        }
+        else if (Tools::isEqual(cname, "FStrProperty"))
+        {
+            return "FString";
+        }
+        else if (Tools::isEqual(cname, "FTextProperty"))
+        {
+            return "FText";
+        }
+        else if (Tools::isEqual(cname, "ArrayProperty"))
+        {
+            return resolveProp(recurrce, FArrayProperty::getInner(prop)) + "[]";
+        }
+        else if (Tools::isEqual(cname, "DelegateProperty") || Tools::isEqual(cname, "MulticastDelegateProperty"))
+        {
+            return "delegate";
+        }
+        else if (Tools::isEqual(cname, "MapProperty"))
+        {
+            return "<" + resolveProp(recurrce, FMapProperty::getKeyProp(prop)) + "," +
+                   resolveProp(recurrce, FMapProperty::getValueProp(prop)) + ">";
+        }
+        else if (Tools::isEqual(cname, "SetProperty"))
+        {
+            return "<" + resolveProp(recurrce, FSetProperty::getElementProp(prop)) + ">";
+        }
+    }
+    return "NULL";
+}
+
 std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
 {
     std::list<kaddr> recurrce;
@@ -208,17 +318,206 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
         std::string oname = FField::getName(prop);      // 成员变量名称
         std::string cname = FField::getClassName(prop); // 成员变量类型名称
 
-        if (Tools::isEqual(cname, "ObjectProperty") || Tools::isEqual(cname, "WeakObjectProperty") ||
-            Tools::isEqual(cname, "LazyObjectProperty") || Tools::isEqual(cname, "AssetObjectProperty") ||
-            Tools::isEqual(cname, "SoftObjectProperty"))
+        if (Tools::isEqual(cname, "ByteProperty"))
+        {
+            sdk << "\tbyte " << oname << " : enum"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+            sdk << "\t{" << std::endl;
+            kaddr enumObj = FByteProperty::getEnum(prop);
+            if (UObject::isValid(enumObj))
+            {
+                kaddr enumNamesArray = UEnum::getNameArray(enumObj);
+                for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
+                {
+                    uint32 index =
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
+                    uint32 enum_num =
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
+                    sdk << "\t\t" << GetFNameFromID(index) << " = " << enum_num << ";" << std::endl;
+                }
+            }
+            sdk << "\t}" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "UInt16Property"))
+        {
+            sdk << "\tuint16 " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "UInt32Property"))
+        {
+            sdk << "\tuint32 " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "UInt64Property"))
+        {
+            sdk << "\tuint64 " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "Int8Property"))
+        {
+            sdk << "\tint8 " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "Int16Property"))
+        {
+            sdk << "\tint16 " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "IntProperty"))
+        {
+            sdk << "\tint " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "Int64Property"))
+        {
+            sdk << "\tint64 " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "BoolProperty"))
+        {
+            sdk << "\tbool " << oname << ";" << std::setbase(10)
+                << "//(ByteOffset: " << (int)FBoolProperty::getByteOffset(prop)
+                << ", ByteMask: " << (int)FBoolProperty::getByteMask(prop)
+                << ", FieldMask: " << (int)FBoolProperty::getFieldMask(prop) << ")"
+                << "[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "FloatProperty"))
+        {
+            sdk << "\tfloat " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "DoubleProperty"))
+        {
+            sdk << "\tdouble " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "ObjectProperty") || Tools::isEqual(cname, "WeakObjectProperty") ||
+                 Tools::isEqual(cname, "LazyObjectProperty") || Tools::isEqual(cname, "AssetObjectProperty") ||
+                 Tools::isEqual(cname, "SoftObjectProperty"))
         {
             kaddr propertyClass = FObjectProperty::getPropertyClass(prop);
 
             sdk << "\t" << UObject::getName(propertyClass) << "* " << oname << ";"
-                << "//[Offset: 0x" << std::setbase(16) << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::setbase(16) << FProperty::getElementSize(prop) << "]" << std::endl;
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
 
             recurrce.push_back(propertyClass);
+        }
+        else if (Tools::isEqual(cname, "ClassProperty") || Tools::isEqual(cname, "AssetClassProperty") ||
+                 Tools::isEqual(cname, "SoftClassProperty"))
+        {
+            kaddr metaClass = FClassProperty::getMetaClass(prop);
+
+            sdk << "\tclass " << UObject::getName(metaClass) << "* " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+
+            recurrce.push_back(metaClass);
+        }
+        else if (Tools::isEqual(cname, "InterfaceProperty"))
+        {
+            kaddr interfaceClass = FInterfaceProperty::getInterfaceClass(prop);
+
+            sdk << "\tinterface class " << UObject::getName(interfaceClass) << "* " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "NameProperty"))
+        {
+            sdk << "\tFName " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "StructProperty"))
+        {
+            kaddr Struct = FStructProperty::getStruct(prop);
+
+            sdk << "\t" << UObject::getName(Struct) << " " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+
+            recurrce.push_back(Struct);
+        }
+        else if (Tools::isEqual(cname, "StrProperty"))
+        {
+            sdk << "\tFString " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "TextProperty"))
+        {
+            sdk << "\tFText " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "ArrayProperty"))
+        {
+            sdk << "\t" << resolveProp(recurrce, FArrayProperty::getInner(prop)) << "[] " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "DelegateProperty") || Tools::isEqual(cname, "MulticastDelegateProperty") ||
+                 Tools::isEqual(cname, "MulticastInlineDelegateProperty") ||
+                 Tools::isEqual(cname, "MulticastSparseDelegateProperty"))
+        {
+            sdk << "\tdelegate " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "MapProperty"))
+        {
+            sdk << "\t<" << resolveProp(recurrce, FMapProperty::getKeyProp(prop)) << ","
+                << resolveProp(recurrce, FMapProperty::getValueProp(prop)) << "> " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "SetProperty"))
+        {
+            sdk << "\t<" << resolveProp(recurrce, FSetProperty::getElementProp(prop)) << "> " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "EnumProperty"))
+        {
+            sdk << "\tenum " << oname << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+            sdk << "\t{" << std::endl;
+            kaddr enumObj = FEnumProperty::getEnum(prop);
+            if (UObject::isValid(enumObj))
+            {
+                kaddr enumNamesArray = UEnum::getNameArray(enumObj);
+                for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
+                {
+                    uint32 index =
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
+                    uint32 enum_num =
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
+                    sdk << "\t\t" << GetFNameFromID(index) << " = " << enum_num << ";" << std::endl;
+                }
+            }
+            sdk << "\t}" << std::endl;
+        }
+        else if (Tools::isEqual(cname, "XigPtrProperty"))
+        {
+            sdk << "\tXigPtrProperty " << oname << ";"
+                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        }
+        else
+        {
+            sdk << "\t" << cname << " " << oname << ";"
+                << "//[Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
         }
         child = FField::getNext(child);
     }
@@ -245,6 +544,7 @@ void writeStruct(std::ofstream &sdk, kaddr clazz)
             structIDMap.push_back(NameID);
             sdk << "Class: " << UStruct::getStructClassPath(currStruct) << std::endl;
             recurrce.merge(writeStructChild(sdk, UStruct::getChildProperties(currStruct)));
+            sdk << "\n--------------------------------" << std::endl;
         }
         currStruct = UStruct::getSuperClass(currStruct);
     }

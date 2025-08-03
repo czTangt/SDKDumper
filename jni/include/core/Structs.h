@@ -1,7 +1,6 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-// 宽字符处理工具
 struct WideStr
 {
     static constexpr size_t MAX_SIZE = 100;
@@ -61,7 +60,6 @@ struct WideStr
     }
 };
 
-// UObject 工具函数
 struct UObject
 {
     static kaddr getClass(kaddr object)
@@ -90,7 +88,6 @@ struct UObject
     }
 };
 
-// UStruct 工具函数
 struct UStruct
 {
     static kaddr getSuperClass(kaddr structz)
@@ -147,7 +144,6 @@ struct UStruct
     }
 };
 
-// FField 工具函数
 struct FField
 {
     static std::string getName(kaddr fField)
@@ -166,12 +162,11 @@ struct FField
     }
 };
 
-// FProperty 工具函数
 struct FProperty
 {
-    static int32 getElementSize(kaddr prop)
+    static uint32 getElementSize(kaddr prop)
     {
-        return Tools::Read<int32>(prop + Offsets::FProperty::ElementSize);
+        return Tools::Read<uint32>(prop + Offsets::FProperty::ElementSize);
     }
 
     static uint64 getPropertyFlags(kaddr prop)
@@ -179,18 +174,122 @@ struct FProperty
         return Tools::Read<uint64>(prop + Offsets::FProperty::PropertyFlags);
     }
 
-    static int32 getOffset(kaddr prop)
+    static uint32 getOffset(kaddr prop)
     {
-        return Tools::Read<int32>(prop + Offsets::FProperty::Offset_Internal);
+        return Tools::Read<uint32>(prop + Offsets::FProperty::Offset_Internal);
     }
 };
 
-// FObjectProperty 工具函数
+struct FByteProperty
+{
+    static kaddr getEnum(kaddr prop)
+    { // class UEnum*
+        return Tools::getPtr(prop + Offsets::FByteProperty::Enum);
+    }
+};
+
+struct UEnum
+{
+    static kaddr getNameArray(kaddr en)
+    {
+        return Tools::getPtr(en + Offsets::UEnum::Names);
+    }
+
+    static uint32 getCount(kaddr en)
+    {
+        return Tools::Read<uint32>(en + Offsets::UEnum::ArrayNum);
+    }
+};
+
+struct FBoolProperty
+{
+    static uint8 getFieldSize(kaddr prop)
+    {
+        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::FieldSize);
+    }
+
+    static uint8 getByteOffset(kaddr prop)
+    {
+        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::ByteOffset);
+    }
+
+    static uint8 getByteMask(kaddr prop)
+    {
+        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::ByteMask);
+    }
+
+    static uint8 getFieldMask(kaddr prop)
+    {
+        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::FieldMask);
+    }
+};
+
 struct FObjectProperty
 {
     static kaddr getPropertyClass(kaddr prop)
     { // class UClass*
         return Tools::getPtr(prop + Offsets::FObjectProperty::PropertyClass);
+    }
+};
+
+struct FClassProperty
+{
+    static kaddr getMetaClass(kaddr prop)
+    { // class UClass*
+        return Tools::getPtr(prop + Offsets::FClassProperty::MetaClass);
+    }
+};
+
+struct FInterfaceProperty
+{
+    static kaddr getInterfaceClass(kaddr prop)
+    { // class UClass*
+        return Tools::getPtr(prop + Offsets::FInterfaceProperty::InterfaceClass);
+    }
+};
+
+struct FStructProperty
+{
+    static kaddr getStruct(kaddr prop)
+    { // UStruct*
+        return Tools::getPtr(prop + Offsets::FStructProperty::Struct);
+    }
+};
+
+struct FArrayProperty
+{
+    static kaddr getInner(kaddr prop)
+    { // UProperty*
+        return Tools::getPtr(prop + Offsets::FArrayProperty::Inner);
+    }
+};
+
+struct FMapProperty
+{
+    static kaddr getKeyProp(kaddr prop)
+    { // UProperty*
+        return Tools::getPtr(prop + Offsets::FMapProperty::KeyProp);
+    }
+
+    static kaddr getValueProp(kaddr prop)
+    { // UProperty*
+        return Tools::getPtr(prop + Offsets::FMapProperty::ValueProp);
+    }
+};
+
+struct FSetProperty
+{
+    static kaddr getElementProp(kaddr prop)
+    { // UProperty*
+        return Tools::getPtr(prop + Offsets::FSetProperty::ElementProp);
+    }
+};
+
+struct FEnumProperty
+{
+    static kaddr getEnum(kaddr prop)
+    { // class UEnum*
+        return Tools::getPtr(prop + Offsets::FEnumProperty::Enum);
     }
 };
 

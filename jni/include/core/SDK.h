@@ -20,6 +20,8 @@ int32 GetObjectCount();
 
 void DumpSDK(std::string outputpath);
 
+std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop);
+
 void writeStruct(std::ofstream &sdk, kaddr clazz);
 
 std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop);
