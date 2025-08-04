@@ -95,7 +95,7 @@ std::string GetFNameFromID(uint32 index)
 
     kaddr StrPtr = FNameEntry + Offsets::FNameEntry::StringName;
     int StrLength = FNameEntryHeader >> Offsets::FNameEntryHeader::StringLenBit;
-    if (StrLength > 0 && StrLength < 256)
+    if (StrLength > 0 && StrLength < 250)
     {
         bool wide = FNameEntryHeader & Offsets::FNameEntryHeader::bIsWide;
         if (wide)
@@ -206,6 +206,33 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
 
         if (Tools::isEqual(cname, "ByteProperty"))
         {
+            kaddr enumObj = FByteProperty::getEnum(prop);
+            std::string enumName = UObject::getName(enumObj);
+            std::cout << "\tenum " << enumName << " " << cname << " : byte"
+                      << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+                      << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+
+            if (UObject::isValid(enumObj))
+            {
+                std::cout << "\t{" << std::endl;
+                kaddr enumNamesArray = UEnum::getNameArray(enumObj);
+                for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
+                {
+                    uint32 index =
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
+                    uint32 enum_num =
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
+                    std::string enumValueName = GetFNameFromID(index);
+                    std::string prefix = enumName + "::";
+                    if (enumValueName.find(prefix) == 0)
+                    {
+                        enumValueName = enumValueName.substr(prefix.length());
+                    }
+
+                    std::cout << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
+                }
+                std::cout << "\t}" << std::endl;
+            }
             return "byte";
         }
         else if (Tools::isEqual(cname, "UInt16Property"))
@@ -267,7 +294,7 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
         {
             kaddr interfaceClass = FInterfaceProperty::getInterfaceClass(prop);
             recurrce.push_back(interfaceClass);
-            return "interface class" + UObject::getName(interfaceClass);
+            return "interface class " + UObject::getName(interfaceClass);
         }
         else if (Tools::isEqual(cname, "NameProperty"))
         {
@@ -328,10 +355,12 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
 
         if (Tools::isEqual(cname, "ByteProperty"))
         {
-            sdk << "\tbyte " << oname << " : enum"
+            kaddr enumObj = FByteProperty::getEnum(prop);
+            std::string enumName = UObject::getName(enumObj);
+            sdk << "\tenum " << enumName << " " << oname << " : byte"
                 << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
                 << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-            kaddr enumObj = FByteProperty::getEnum(prop);
+
             if (UObject::isValid(enumObj))
             {
                 sdk << "\t{" << std::endl;
@@ -342,7 +371,14 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
                         Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
                     uint32 enum_num =
                         Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
-                    sdk << "\t\t" << GetFNameFromID(index) << " = " << enum_num << ";" << std::endl;
+                    std::string enumValueName = GetFNameFromID(index);
+                    std::string prefix = enumName + "::";
+                    if (enumValueName.find(prefix) == 0)
+                    {
+                        enumValueName = enumValueName.substr(prefix.length());
+                    }
+
+                    sdk << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
                 }
                 sdk << "\t}" << std::endl;
             }
@@ -498,12 +534,15 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
         }
         else if (Tools::isEqual(cname, "EnumProperty"))
         {
-            sdk << "\tenum " << oname << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-            sdk << "\t{" << std::endl;
             kaddr enumObj = FEnumProperty::getEnum(prop);
+            std::string enumName = UObject::getName(enumObj);
+            sdk << "\tenum " << enumName << " " << oname << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop)
+                << ", "
+                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+
             if (UObject::isValid(enumObj))
             {
+                sdk << "\t{" << std::endl;
                 kaddr enumNamesArray = UEnum::getNameArray(enumObj);
                 for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
                 {
@@ -511,10 +550,16 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
                         Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
                     uint32 enum_num =
                         Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
-                    sdk << "\t\t" << GetFNameFromID(index) << " = " << enum_num << ";" << std::endl;
+                    std::string enumValueName = GetFNameFromID(index);
+                    std::string prefix = enumName + "::";
+                    if (enumValueName.find(prefix) == 0)
+                    {
+                        enumValueName = enumValueName.substr(prefix.length());
+                    }
+                    sdk << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
                 }
+                sdk << "\t}" << std::endl;
             }
-            sdk << "\t}" << std::endl;
         }
         else if (Tools::isEqual(cname, "XigPtrProperty"))
         {
