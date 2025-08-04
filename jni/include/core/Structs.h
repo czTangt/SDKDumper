@@ -64,12 +64,12 @@ struct UObject
 {
     static kaddr getClass(kaddr object)
     { // UClass*
-        return Tools::getPtr(object + Offsets::UObjectBase::ClassPrivate);
+        return Tools::getPtr(object + Offsets.UObjectBase.ClassPrivate);
     }
 
     static uint32 getNameID(kaddr object)
     {
-        return Tools::Read<uint32>(object + Offsets::UObjectBase::NamePrivate + Offsets::FName::ComparisonIndex);
+        return Tools::Read<uint32>(object + Offsets.UObjectBase.NamePrivate + Offsets.FName.ComparisonIndex);
     }
 
     static bool isValid(kaddr object)
@@ -92,17 +92,17 @@ struct UStruct
 {
     static kaddr getSuperClass(kaddr structz)
     { // UStruct* -> 该结构体的父类
-        return Tools::getPtr(structz + Offsets::UStruct::SuperStruct);
+        return Tools::getPtr(structz + Offsets.UStruct.SuperStruct);
     }
 
     static kaddr getChildren(kaddr structz)
     { // UField* -> 该结构体的方法
-        return Tools::getPtr(structz + Offsets::UStruct::Children);
+        return Tools::getPtr(structz + Offsets.UStruct.Children);
     }
 
     static kaddr getChildProperties(kaddr structz)
     { // FField* -> 该结构体的属性
-        return Tools::getPtr(structz + Offsets::UStruct::ChildProperties);
+        return Tools::getPtr(structz + Offsets.UStruct.ChildProperties);
     }
 
     static std::string getClassName(kaddr clazz)
@@ -148,17 +148,17 @@ struct FField
 {
     static std::string getName(kaddr fField)
     { // FName -> 该字段的名称
-        return GetFNameFromID(Tools::Read<uint32>(fField + Offsets::FField::NamePrivate));
+        return GetFNameFromID(Tools::Read<uint32>(fField + Offsets.FField.NamePrivate));
     }
 
     static std::string getClassName(kaddr fField)
     { // FFieldClass* -> 该字段的类型名称
-        return GetFNameFromID(Tools::Read<uint32>(Tools::getPtr(fField + Offsets::FField::ClassPrivate)));
+        return GetFNameFromID(Tools::Read<uint32>(Tools::getPtr(fField + Offsets.FField.ClassPrivate)));
     }
 
     static kaddr getNext(kaddr fField)
     { // FField* -> 下一个 FField* 对象
-        return Tools::getPtr(fField + Offsets::FField::Next);
+        return Tools::getPtr(fField + Offsets.FField.Next);
     }
 };
 
@@ -166,17 +166,17 @@ struct FProperty
 {
     static uint32 getElementSize(kaddr prop)
     {
-        return Tools::Read<uint32>(prop + Offsets::FProperty::ElementSize);
+        return Tools::Read<uint32>(prop + Offsets.FProperty.ElementSize);
     }
 
     static uint64 getPropertyFlags(kaddr prop)
     {
-        return Tools::Read<uint64>(prop + Offsets::FProperty::PropertyFlags);
+        return Tools::Read<uint64>(prop + Offsets.FProperty.PropertyFlags);
     }
 
     static uint32 getOffset(kaddr prop)
     {
-        return Tools::Read<uint32>(prop + Offsets::FProperty::Offset_Internal);
+        return Tools::Read<uint32>(prop + Offsets.FProperty.Offset_Internal);
     }
 };
 
@@ -184,7 +184,7 @@ struct FByteProperty
 {
     static kaddr getEnum(kaddr prop)
     { // class UEnum*
-        return Tools::getPtr(prop + Offsets::FByteProperty::Enum);
+        return Tools::getPtr(prop + Offsets.FByteProperty.Enum);
     }
 };
 
@@ -192,12 +192,12 @@ struct UEnum
 {
     static kaddr getNameArray(kaddr en)
     {
-        return Tools::getPtr(en + Offsets::UEnum::Names);
+        return Tools::getPtr(en + Offsets.UEnum.Names);
     }
 
     static uint32 getCount(kaddr en)
     {
-        return Tools::Read<uint32>(en + Offsets::UEnum::ArrayNum);
+        return Tools::Read<uint32>(en + Offsets.UEnum.ArrayNum);
     }
 };
 
@@ -205,22 +205,22 @@ struct FBoolProperty
 {
     static uint8 getFieldSize(kaddr prop)
     {
-        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::FieldSize);
+        return Tools::Read<uint8>(prop + Offsets.FBoolProperty.FieldSize);
     }
 
     static uint8 getByteOffset(kaddr prop)
     {
-        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::ByteOffset);
+        return Tools::Read<uint8>(prop + Offsets.FBoolProperty.ByteOffset);
     }
 
     static uint8 getByteMask(kaddr prop)
     {
-        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::ByteMask);
+        return Tools::Read<uint8>(prop + Offsets.FBoolProperty.ByteMask);
     }
 
     static uint8 getFieldMask(kaddr prop)
     {
-        return Tools::Read<uint8>(prop + Offsets::FBoolProperty::FieldMask);
+        return Tools::Read<uint8>(prop + Offsets.FBoolProperty.FieldMask);
     }
 };
 
@@ -228,7 +228,7 @@ struct FObjectProperty
 {
     static kaddr getPropertyClass(kaddr prop)
     { // class UClass*
-        return Tools::getPtr(prop + Offsets::FObjectProperty::PropertyClass);
+        return Tools::getPtr(prop + Offsets.FObjectProperty.PropertyClass);
     }
 };
 
@@ -236,7 +236,7 @@ struct FClassProperty
 {
     static kaddr getMetaClass(kaddr prop)
     { // class UClass*
-        return Tools::getPtr(prop + Offsets::FClassProperty::MetaClass);
+        return Tools::getPtr(prop + Offsets.FClassProperty.MetaClass);
     }
 };
 
@@ -244,7 +244,7 @@ struct FInterfaceProperty
 {
     static kaddr getInterfaceClass(kaddr prop)
     { // class UClass*
-        return Tools::getPtr(prop + Offsets::FInterfaceProperty::InterfaceClass);
+        return Tools::getPtr(prop + Offsets.FInterfaceProperty.InterfaceClass);
     }
 };
 
@@ -252,7 +252,7 @@ struct FStructProperty
 {
     static kaddr getStruct(kaddr prop)
     { // UStruct*
-        return Tools::getPtr(prop + Offsets::FStructProperty::Struct);
+        return Tools::getPtr(prop + Offsets.FStructProperty.Struct);
     }
 };
 
@@ -260,7 +260,7 @@ struct FArrayProperty
 {
     static kaddr getInner(kaddr prop)
     { // UProperty*
-        return Tools::getPtr(prop + Offsets::FArrayProperty::Inner);
+        return Tools::getPtr(prop + Offsets.FArrayProperty.Inner);
     }
 };
 
@@ -268,12 +268,12 @@ struct FMapProperty
 {
     static kaddr getKeyProp(kaddr prop)
     { // UProperty*
-        return Tools::getPtr(prop + Offsets::FMapProperty::KeyProp);
+        return Tools::getPtr(prop + Offsets.FMapProperty.KeyProp);
     }
 
     static kaddr getValueProp(kaddr prop)
     { // UProperty*
-        return Tools::getPtr(prop + Offsets::FMapProperty::ValueProp);
+        return Tools::getPtr(prop + Offsets.FMapProperty.ValueProp);
     }
 };
 
@@ -281,7 +281,7 @@ struct FSetProperty
 {
     static kaddr getElementProp(kaddr prop)
     { // UProperty*
-        return Tools::getPtr(prop + Offsets::FSetProperty::ElementProp);
+        return Tools::getPtr(prop + Offsets.FSetProperty.ElementProp);
     }
 };
 
@@ -289,7 +289,7 @@ struct FEnumProperty
 {
     static kaddr getEnum(kaddr prop)
     { // class UEnum*
-        return Tools::getPtr(prop + Offsets::FEnumProperty::Enum);
+        return Tools::getPtr(prop + Offsets.FEnumProperty.Enum);
     }
 };
 
@@ -297,12 +297,12 @@ struct UFunction
 {
     static int32 getFunctionFlags(kaddr func)
     {
-        return Tools::Read<int32>(func + Offsets::UFunction::FunctionFlags);
+        return Tools::Read<int32>(func + Offsets.UFunction.FunctionFlags);
     }
 
     static kaddr getFunc(kaddr func)
     {
-        return Tools::getPtr(func + Offsets::UFunction::Func);
+        return Tools::getPtr(func + Offsets.UFunction.Func);
     }
 };
 
@@ -310,7 +310,7 @@ struct UField
 {
     static kaddr getNext(kaddr field)
     { // UField*
-        return Tools::getPtr(field + Offsets::UField::Next);
+        return Tools::getPtr(field + Offsets.UField.Next);
     }
 };
 

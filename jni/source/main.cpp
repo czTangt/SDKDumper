@@ -63,24 +63,18 @@ int main(int argc, char *argv[])
     cout << lib_name << ": base_addr: 0x" << std::hex << Tools::lib_range.base << ", end_addr: 0x"
          << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
 
-    // init offsets
-    Offsets::initOffsets();
-
     // get strings dump
     isStrDump = false;
-    Offsets::Global::GName = Tools::getHexAddr("0x0B171CC0");
     if (isStrDump)
         DumpStrings(outputpath);
 
     // get actors dump
     isActorDump = false;
-    Offsets::Global::GWorld = Tools::getHexAddr("0x0B32D8A8");
     if (isActorDump)
         DumpActors(outputpath);
 
     // get objects dump
-    isObjectDump = false;
-    Offsets::Global::GUObjectArray = Tools::getHexAddr("0xB1B5F98");
+    isObjectDump = true;
     if (isObjectDump)
         DumpObjects(outputpath);
 

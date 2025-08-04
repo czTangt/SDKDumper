@@ -3,14 +3,14 @@
 
 void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSizeBytes)
 {
-    kaddr It = Tools::getPtr(block + (blockIdx * Offsets::Global::PointerSize));
-    kaddr End = It + blockSizeBytes - Offsets::FNameEntry::StringName;
+    kaddr It = Tools::getPtr(block + (blockIdx * Offsets.Global.PointerSize));
+    kaddr End = It + blockSizeBytes - Offsets.FNameEntry.StringName;
     uint16 Offset = 0;
     while (It < End)
     {
         kaddr FNameEntry = It;
         int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
-        int StrLength = FNameEntryHeader >> Offsets::FNameEntryHeader::StringLenBit;
+        int StrLength = FNameEntryHeader >> Offsets.FNameEntryHeader.StringLenBit;
         if (StrLength)
         {
             bool wide = FNameEntryHeader & 1;
@@ -22,7 +22,7 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
                 {
                     std::string str;
                     uint32 key = (blockIdx << 16 | Offset);
-                    kaddr StrPtr = FNameEntry + Offsets::FNameEntry::StringName;
+                    kaddr StrPtr = FNameEntry + Offsets.FNameEntry.StringName;
 
                     if (wide)
                         str = WideStr::readString(StrPtr, StrLength);
@@ -40,14 +40,14 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
             }
 
             // 遍历下一个
-            uint16 totalBytes = Offsets::FNameEntry::StringName + StrLength * (wide ? sizeof(wchar_t) : sizeof(char));
+            uint16 totalBytes = Offsets.FNameEntry.StringName + StrLength * (wide ? sizeof(wchar_t) : sizeof(char));
             uint32 alignedBytes =
-                (totalBytes + Offsets::FNameEntryAllocator::Stride - 1u) & ~(Offsets::FNameEntryAllocator::Stride - 1u);
+                (totalBytes + Offsets.FNameEntryAllocator.Stride - 1u) & ~(Offsets.FNameEntryAllocator.Stride - 1u);
 
             It += alignedBytes;
             // BlockSizeBytes = Stride * FNameBlockOffsets 为 2 * 0x10000，因此除以 Stride 保证 offset 在一个 block 内部
             // 真实的块内偏移为 Offset * 2
-            Offset += alignedBytes / Offsets::FNameEntryAllocator::Stride;
+            Offset += alignedBytes / Offsets.FNameEntryAllocator.Stride;
         }
         else
         {
@@ -61,11 +61,12 @@ void DumpStrings(std::string outputpath)
     std::ofstream gname(outputpath + "/Strings.txt", std::ofstream::out);
     if (gname.is_open())
     {
-        kaddr FNameEntryAllocator = Tools::getRealOffset(Offsets::Global::GName) + Offsets::FNamePool::Entries;
-        uint32 CurrentBlock = Tools::Read<uint32>(FNameEntryAllocator + Offsets::FNameEntryAllocator::CurrentBlock);
+
+        kaddr FNameEntryAllocator = Tools::getRealOffset(Offsets.Global.GName) + Offsets.FNamePool.Entries;
+        uint32 CurrentBlock = Tools::Read<uint32>(FNameEntryAllocator + Offsets.FNameEntryAllocator.CurrentBlock);
         uint32 CurrentByteCursor =
-            Tools::Read<uint32>(FNameEntryAllocator + Offsets::FNameEntryAllocator::CurrentByteCursor);
-        kaddr Block = FNameEntryAllocator + Offsets::FNameEntryAllocator::Blocks;
+            Tools::Read<uint32>(FNameEntryAllocator + Offsets.FNameEntryAllocator.CurrentByteCursor);
+        kaddr Block = FNameEntryAllocator + Offsets.FNameEntryAllocator.Blocks;
 
         std::cout << "[1] Dumping Strings ---" << std::endl;
         std::cout << "Total Blocks: " << std::dec << (CurrentBlock + 1) << std::endl;
@@ -74,7 +75,7 @@ void DumpStrings(std::string outputpath)
         // All Blocks Except Current
         for (uint32 BlockIdx = 0; BlockIdx < CurrentBlock; ++BlockIdx)
         {
-            DumpBlocks(gname, Block, BlockIdx, Offsets::FNameEntryAllocator::BlockSizeBytes);
+            DumpBlocks(gname, Block, BlockIdx, Offsets.FNameEntryAllocator.BlockSizeBytes);
         }
         // Last Block
         DumpBlocks(gname, Block, CurrentBlock, CurrentByteCursor);
@@ -83,21 +84,21 @@ void DumpStrings(std::string outputpath)
 
 std::string GetFNameFromID(uint32 index)
 {
-    uint32 Block = index >> Offsets::FNameBlockOffsetBits;
-    uint16 Offset = index & (Offsets::FNameBlockOffsets - 1);
+    uint32 Block = index >> Offsets.FNameBlockOffsetBits;
+    uint16 Offset = index & (Offsets.FNameBlockOffsets - 1);
 
-    kaddr FNameEntryAllocator = Tools::getRealOffset(Offsets::Global::GName) + Offsets::FNamePool::Entries;
-    kaddr Blocks = FNameEntryAllocator + Offsets::FNameEntryAllocator::Blocks;
-    kaddr BlockInstance = Tools::getPtr(Blocks + (Block * Offsets::Global::PointerSize));
+    kaddr FNameEntryAllocator = Tools::getRealOffset(Offsets.Global.GName) + Offsets.FNamePool.Entries;
+    kaddr Blocks = FNameEntryAllocator + Offsets.FNameEntryAllocator.Blocks;
+    kaddr BlockInstance = Tools::getPtr(Blocks + (Block * Offsets.Global.PointerSize));
 
-    kaddr FNameEntry = BlockInstance + (Offsets::FNameEntryAllocator::Stride * Offset);
+    kaddr FNameEntry = BlockInstance + (Offsets.FNameEntryAllocator.Stride * Offset);
     int16 FNameEntryHeader = Tools::Read<int16>(FNameEntry);
 
-    kaddr StrPtr = FNameEntry + Offsets::FNameEntry::StringName;
-    int StrLength = FNameEntryHeader >> Offsets::FNameEntryHeader::StringLenBit;
+    kaddr StrPtr = FNameEntry + Offsets.FNameEntry.StringName;
+    int StrLength = FNameEntryHeader >> Offsets.FNameEntryHeader.StringLenBit;
     if (StrLength > 0 && StrLength < 250)
     {
-        bool wide = FNameEntryHeader & Offsets::FNameEntryHeader::bIsWide;
+        bool wide = FNameEntryHeader & Offsets.FNameEntryHeader.bIsWide;
         if (wide)
         {
             return WideStr::readString(StrPtr, StrLength);
@@ -118,18 +119,18 @@ void DumpActors(std::string outputpath)
     std::ofstream actorlist(outputpath + "/Actors.txt", std::ofstream::out);
     if (actorlist.is_open())
     {
-        kaddr word = Tools::getPtr(Tools::getRealOffset(Offsets::Global::GWorld));
-        kaddr level = Tools::getPtr(word + Offsets::UWorld::PersistentLevel);
+        kaddr word = Tools::getPtr(Tools::getRealOffset(Offsets.Global.GWorld));
+        kaddr level = Tools::getPtr(word + Offsets.UWorld.PersistentLevel);
 
-        kaddr actorsArray = Tools::getPtr(level + Offsets::ULevel::AActors);
-        uint32 actorsCount = Tools::Read<uint32>(level + Offsets::ULevel::ActorsCount);
+        kaddr actorsArray = Tools::getPtr(level + Offsets.ULevel.AActors);
+        uint32 actorsCount = Tools::Read<uint32>(level + Offsets.ULevel.ActorsCount);
 
         std::cout << "[2] Dumping Actors ---" << std::endl;
         std::cout << "Total Actors: " << actorsCount << std::endl;
 
         for (int i = 0; i < actorsCount; i++)
         {
-            kaddr actor = Tools::getPtr(actorsArray + (i * Offsets::Global::PointerSize));
+            kaddr actor = Tools::getPtr(actorsArray + (i * Offsets.Global.PointerSize));
             if (UObject::isValid(actor))
             {
                 actorlist << "Id: " << std::setw(3) << std::right << std::setbase(10) << i << ", Addr: 0x" << std::hex
@@ -142,16 +143,15 @@ void DumpActors(std::string outputpath)
 kaddr GetUObjectFromID(uint32 index)
 {
     kaddr TUObjectArray =
-        Tools::getPtr(Tools::getRealOffset(Offsets::Global::GUObjectArray) + Offsets::FUObjectArray::ObjObjects);
-    kaddr Chunk =
-        Tools::getPtr(TUObjectArray + ((index / Offsets::NumElementsPerChunk) * Offsets::Global::PointerSize));
-    return Tools::getPtr(Chunk + ((index % Offsets::NumElementsPerChunk) * Offsets::FUObjectItem::Size));
+        Tools::getPtr(Tools::getRealOffset(Offsets.Global.GUObjectArray) + Offsets.FUObjectArray.ObjObjects);
+    kaddr Chunk = Tools::getPtr(TUObjectArray + ((index / Offsets.NumElementsPerChunk) * Offsets.Global.PointerSize));
+    return Tools::getPtr(Chunk + ((index % Offsets.NumElementsPerChunk) * Offsets.FUObjectItem.Size));
 }
 
 int32 GetObjectCount()
 {
-    return Tools::Read<int32>(Tools::getRealOffset(Offsets::Global::GUObjectArray) +
-                              Offsets::FUObjectArray::ObjObjects + Offsets::TUObjectArray::NumElements);
+    return Tools::Read<int32>(Tools::getRealOffset(Offsets.Global.GUObjectArray) + Offsets.FUObjectArray.ObjObjects +
+                              Offsets.TUObjectArray.NumElements);
 }
 
 void DumpObjects(std::string outputpath)
@@ -208,31 +208,33 @@ std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
         {
             kaddr enumObj = FByteProperty::getEnum(prop);
             std::string enumName = UObject::getName(enumObj);
-            std::cout << "\tenum " << enumName << " " << cname << " : byte"
-                      << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                      << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+            // std::cout << "\tenum " << enumName << " " << cname << " : byte"
+            //           << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
+            //           << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
 
-            if (UObject::isValid(enumObj))
-            {
-                std::cout << "\t{" << std::endl;
-                kaddr enumNamesArray = UEnum::getNameArray(enumObj);
-                for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
-                {
-                    uint32 index =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
-                    uint32 enum_num =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
-                    std::string enumValueName = GetFNameFromID(index);
-                    std::string prefix = enumName + "::";
-                    if (enumValueName.find(prefix) == 0)
-                    {
-                        enumValueName = enumValueName.substr(prefix.length());
-                    }
+            // if (UObject::isValid(enumObj))
+            // {
+            //     std::cout << "\t{" << std::endl;
+            //     kaddr enumNamesArray = UEnum::getNameArray(enumObj);
+            //     for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
+            //     {
+            //         uint32 index =
+            //             Tools::Read<uint32>(enumNamesArray + i * Offsets.UEnum.enumItemSize +
+            // Offsets.TPair.Key);
+            //         uint32 enum_num =
+            //             Tools::Read<uint32>(enumNamesArray + i * Offsets.UEnum.enumItemSize +
+            //             Offsets.TPair.Value);
+            //         std::string enumValueName = GetFNameFromID(index);
+            //         std::string prefix = enumName + "::";
+            //         if (enumValueName.find(prefix) == 0)
+            //         {
+            //             enumValueName = enumValueName.substr(prefix.length());
+            //         }
 
-                    std::cout << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
-                }
-                std::cout << "\t}" << std::endl;
-            }
+            //         std::cout << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
+            //     }
+            //     std::cout << "\t}" << std::endl;
+            // }
             return "byte";
         }
         else if (Tools::isEqual(cname, "UInt16Property"))
@@ -367,10 +369,9 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
                 kaddr enumNamesArray = UEnum::getNameArray(enumObj);
                 for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
                 {
-                    uint32 index =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
+                    uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
                     uint32 enum_num =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
                     std::string enumValueName = GetFNameFromID(index);
                     std::string prefix = enumName + "::";
                     if (enumValueName.find(prefix) == 0)
@@ -546,10 +547,9 @@ std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
                 kaddr enumNamesArray = UEnum::getNameArray(enumObj);
                 for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
                 {
-                    uint32 index =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Key);
+                    uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
                     uint32 enum_num =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets::UEnum::enumItemSize + Offsets::TPair::Value);
+                        Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
                     std::string enumValueName = GetFNameFromID(index);
                     std::string prefix = enumName + "::";
                     if (enumValueName.find(prefix) == 0)
