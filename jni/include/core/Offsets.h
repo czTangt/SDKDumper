@@ -84,7 +84,7 @@ struct _Offsets
         kaddr ClassPrivate = 0x10; // 0x8
         kaddr NamePrivate = 0x18;  // 0x8
         kaddr OuterPrivate = 0x20; // 0x8
-    } UObjectBase;
+    } UObject;
 
     struct
     {

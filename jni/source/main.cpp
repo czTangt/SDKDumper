@@ -64,24 +64,24 @@ int main(int argc, char *argv[])
          << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
 
     // get strings dump
-    isStrDump = false;
+    isStrDump = true;
     if (isStrDump)
         DumpStrings(outputpath);
 
-    // get actors dump
-    isActorDump = false;
-    if (isActorDump)
-        DumpActors(outputpath);
+    // // get actors dump
+    // isActorDump = false;
+    // if (isActorDump)
+    //     DumpActors(outputpath);
 
-    // get objects dump
-    isObjectDump = true;
-    if (isObjectDump)
-        DumpObjects(outputpath);
+    // // get objects dump
+    // isObjectDump = false;
+    // if (isObjectDump)
+    //     DumpObjects(outputpath);
 
-    // get SDK dump
-    isSDKDump = true;
-    if (isSDKDump)
-        DumpSDK(outputpath);
+    // // get SDK dump
+    // isSDKDump = true;
+    // if (isSDKDump)
+    //     DumpSDK(outputpath);
 
     return 0;
 }

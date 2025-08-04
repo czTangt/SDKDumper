@@ -64,12 +64,12 @@ struct UObject
 {
     static kaddr getClass(kaddr object)
     { // UClass*
-        return Tools::getPtr(object + Offsets.UObjectBase.ClassPrivate);
+        return Tools::getPtr(object + Offsets.UObject.ClassPrivate);
     }
 
     static uint32 getNameID(kaddr object)
     {
-        return Tools::Read<uint32>(object + Offsets.UObjectBase.NamePrivate + Offsets.FName.ComparisonIndex);
+        return Tools::Read<uint32>(object + Offsets.UObject.NamePrivate + Offsets.FName.ComparisonIndex);
     }
 
     static bool isValid(kaddr object)

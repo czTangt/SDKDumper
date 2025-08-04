@@ -25,7 +25,7 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
                     kaddr StrPtr = FNameEntry + Offsets.FNameEntry.StringName;
 
                     if (wide)
-                        str = WideStr::readString(StrPtr, StrLength);
+                        str = Tools::WideStr::readString(StrPtr, StrLength);
                     else
                         str = Tools::readString(StrPtr, StrLength);
 

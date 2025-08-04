@@ -114,11 +114,6 @@ kaddr getRealOffset(kaddr offset)
     return (lib_range.base + offset);
 }
 
-kaddr getHexAddr(const char *addr)
-{
-    return (kaddr)strtoul(addr, nullptr, 16);
-}
-
 std::string readString(kaddr address, unsigned int size)
 {
     std::string result(size, '\0');

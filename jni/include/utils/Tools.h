@@ -39,9 +39,6 @@ pid_t getTargetPid(const char *process_name);
 // get the base address of a module by its name.
 ModuleRange getModuleRange(pid_t pid, const char *module_name);
 
-// convert a kaddr offset to a real memory address.
-kaddr getHexAddr(const char *addr);
-
 // read a string from a given address with a specified size.
 std::string readString(kaddr address, unsigned int size);
 
@@ -83,6 +80,59 @@ template <typename T> std::vector<T> ReadArr(kaddr address, unsigned int size)
         vm_readv(reinterpret_cast<void *>(address), data.data(), sizeof(T) * size);
     return data;
 }
+
+struct WideStr
+{
+    static std::string readString(kaddr StrPtr, int StrLength)
+    {
+        auto source = Tools::ReadArr<UTF16>(StrPtr, StrLength);
+
+        std::string result;
+        result.reserve(StrLength * 3); // UTF-8 最多需要3字节 per 字符
+
+        for (size_t i = 0; i < StrLength; i++)
+        {
+            UTF16 c = source[i];
+            if (c == 0)
+                break; // 遇到空字符停止
+
+            // 转换为 UTF-8
+            if (c < 0x80)
+            {
+                result.push_back(static_cast<char>(c));
+            }
+            else if (c < 0x800)
+            {
+                result.push_back(static_cast<char>(0xC0 | (c >> 6)));
+                result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+            }
+            else if (c < 0xD800 || c > 0xDFFF)
+            {
+                // 不是代理对
+                result.push_back(static_cast<char>(0xE0 | (c >> 12)));
+                result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+                result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+            }
+            else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < StrLength)
+            {
+                // 高代理对
+                UTF16 low = source[i + 1];
+                if (low >= 0xDC00 && low <= 0xDFFF)
+                {
+                    uint32_t codepoint = 0x10000 + ((c & 0x3FF) << 10) + (low & 0x3FF);
+                    result.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
+                    result.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
+                    result.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+                    result.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+                    i++; // 跳过低代理
+                }
+            }
+        }
+
+        return result;
+    }
+};
+
 } // namespace Tools
 
 #endif // TOOLS_H
