@@ -12,7 +12,7 @@ LOCAL_CFLAGS += -DNDEBUG
 LOCAL_MODULE := sdkdumper64
 
 LOCAL_SRC_FILES := source/main.cpp \
-                   source/core/SDK.cpp \
+                   source/core/Dumper.cpp \
                    source/utils/Tools.cpp \
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \

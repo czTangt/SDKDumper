@@ -17,13 +17,14 @@
 #include <vector>
 
 #include "Config.h"
-#include "SDK.h"
+#include "Dumper.h"
+#include "Engine.h"
 #include "Tools.h"
 
 using namespace std;
 
 string pkg("com.tencent.ace.match2024");
-string outputpath("/data/local/tmp/match2024");
+string outputpath("/sdcard/Download/match2024");
 static const char *lib_name = "libUE4.so";
 bool isStrDump = false;
 bool isActorDump = false;
@@ -64,19 +65,19 @@ int main(int argc, char *argv[])
          << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
 
     // get strings dump
-    isStrDump = true;
+    isStrDump = false;
     if (isStrDump)
         DumpStrings(outputpath);
 
-    // // get actors dump
-    // isActorDump = false;
-    // if (isActorDump)
-    //     DumpActors(outputpath);
+    // get actors dump
+    isActorDump = false;
+    if (isActorDump)
+        DumpActors(outputpath);
 
-    // // get objects dump
-    // isObjectDump = false;
-    // if (isObjectDump)
-    //     DumpObjects(outputpath);
+    // get objects dump
+    isObjectDump = true;
+    if (isObjectDump)
+        DumpObjects(outputpath);
 
     // // get SDK dump
     // isSDKDump = true;

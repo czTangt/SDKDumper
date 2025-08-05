@@ -91,6 +91,7 @@ struct _Offsets
         kaddr SuperStruct = 0x40;     // 0x8
         kaddr Children = 0x48;        // 0x8
         kaddr ChildProperties = 0x50; // 0x8
+        kaddr PropertiesSize = 0x58;  // 0x4
     } UStruct;
 
     struct

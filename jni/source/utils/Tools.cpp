@@ -153,4 +153,12 @@ bool isStartWith(std::string str, const char *check)
     return (str.rfind(check, 0) == 0);
 }
 
+std::string getCurrentTimeString()
+{
+    std::time_t now = std::time(nullptr);
+    char buffer[100];
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    return std::string(buffer);
+}
+
 } // namespace Tools

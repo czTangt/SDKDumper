@@ -133,6 +133,8 @@ struct WideStr
     }
 };
 
+std::string getCurrentTimeString();
+
 } // namespace Tools
 
 #endif // TOOLS_H

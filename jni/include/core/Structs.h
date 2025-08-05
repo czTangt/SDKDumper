@@ -1,70 +1,20 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-struct WideStr
-{
-    static constexpr size_t MAX_SIZE = 100;
+#include "Dumper.h"
 
-    static int is_surrogate(UTF16 uc)
-    {
-        return (uc - 0xd800u) < 2048u;
-    }
-
-    static int is_high_surrogate(UTF16 uc)
-    {
-        return (uc & 0xfffffc00) == 0xd800;
-    }
-
-    static int is_low_surrogate(UTF16 uc)
-    {
-        return (uc & 0xfffffc00) == 0xdc00;
-    }
-
-    static wchar_t surrogate_to_utf32(UTF16 high, UTF16 low)
-    {
-        return (high << 10) + low - 0x35fdc00;
-    }
-
-    static std::wstring w_str(kaddr str, size_t len)
-    {
-        auto source = Tools::ReadArr<UTF16>(str, len);
-        std::wstring output(len, L'\0');
-
-        for (size_t i = 0; i < len; i++)
-        {
-            const UTF16 uc = source[i];
-            if (!is_surrogate(uc))
-            {
-                output[i] = uc;
-            }
-            else
-            {
-                if (is_high_surrogate(uc) && is_low_surrogate(source[i]))
-                    output[i] = surrogate_to_utf32(uc, source[i]);
-                else
-                    output[i] = L'?';
-            }
-        }
-        return output;
-    }
-
-    static std::string readString(kaddr StrPtr, int StrLength)
-    {
-        std::wstring str = w_str(StrPtr, StrLength);
-
-        std::string result(MAX_SIZE, '\0');
-
-        wcstombs((char *)result.data(), str.c_str(), MAX_SIZE);
-
-        return result;
-    }
-};
+struct UStruct;
 
 struct UObject
 {
     static kaddr getClass(kaddr object)
     { // UClass*
         return Tools::getPtr(object + Offsets.UObject.ClassPrivate);
+    }
+
+    static kaddr getOuter(kaddr object)
+    { // UObject*
+        return Tools::getPtr(object + Offsets.UObject.OuterPrivate);
     }
 
     static uint32 getNameID(kaddr object)
@@ -85,6 +35,11 @@ struct UObject
     static std::string getClassName(kaddr object)
     {
         return getName(getClass(object));
+    }
+
+    static std::string getOuterName(kaddr object)
+    {
+        return getName(getOuter(object));
     }
 };
 
@@ -110,37 +65,30 @@ struct UStruct
         return UObject::getName(clazz);
     }
 
-    static std::string getClassPath(kaddr object)
-    { // 获取当前对象的完全类限定符
-        kaddr clazz = UObject::getClass(object);
-        std::string classname = UObject::getName(clazz);
-
-        kaddr superclass = getSuperClass(clazz);
-        while (superclass)
-        {
-            classname += ".";
-            classname += UObject::getName(superclass);
-
-            superclass = getSuperClass(superclass);
-        }
-
-        return classname;
+    static uint32 getPropertiesSize(kaddr structz)
+    {
+        return Tools::Read<uint32>(structz + Offsets.UStruct.PropertiesSize);
     }
 
-    static std::string getStructClassPath(kaddr clazz)
-    { // 获取当前类的完全类限定符
-        std::string classname = UObject::getName(clazz);
-
-        kaddr superclass = getSuperClass(clazz);
-        while (superclass)
+    static std::string getCPPName(kaddr object)
+    {
+        std::string name = UObject::getName(object);
+        for (kaddr uStruct = object; uStruct; uStruct = UStruct::getSuperClass(uStruct))
         {
-            classname += ".";
-            classname += UObject::getName(superclass);
-
-            superclass = getSuperClass(superclass);
+            if (uStruct == objectFullName.EngineActor)
+            {
+                return "A" + name;
+            }
+            else if (uStruct == objectFullName.CoreClass)
+            {
+                return "U" + name;
+            }
+            else if (uStruct == objectFullName.CoreEnum)
+            {
+                return "E" + name;
+            }
         }
-
-        return classname;
+        return "F" + name;
     }
 };
 

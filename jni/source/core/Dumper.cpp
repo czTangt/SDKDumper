@@ -1,4 +1,4 @@
-#include "SDK.h"
+#include "Dumper.h"
 #include "Structs.h"
 
 void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSizeBytes)
@@ -14,25 +14,20 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
         if (StrLength)
         {
             bool wide = FNameEntryHeader & 1;
-
-            if (StrLength > 0)
+            if (StrLength > 0 && StrLength < 250) // 字符串长度限制
             {
-                // 字符串长度限制
-                if (StrLength < 256)
-                {
-                    std::string str;
-                    uint32 key = (blockIdx << 16 | Offset);
-                    kaddr StrPtr = FNameEntry + Offsets.FNameEntry.StringName;
+                std::string str;
+                uint32 key = (blockIdx << 16 | Offset);
+                kaddr StrPtr = FNameEntry + Offsets.FNameEntry.StringName;
 
-                    if (wide)
-                        str = Tools::WideStr::readString(StrPtr, StrLength);
-                    else
-                        str = Tools::readString(StrPtr, StrLength);
+                if (wide)
+                    str = Tools::WideStr::readString(StrPtr, StrLength);
+                else
+                    str = Tools::readString(StrPtr, StrLength);
 
-                    gname << "[0x" << std::setfill('0') << std::setw(6) << std::hex << key << "]\t" << std::setw(4)
-                          << (wide ? "Wide\t" : "Ansi\t") << "{0x" << std::setfill('0') << std::setw(3) << StrLength
-                          << "}\t" << str << std::endl;
-                }
+                gname << "[0x" << std::setfill('0') << std::setw(6) << std::hex << key << "]\t" << std::setw(4)
+                      << (wide ? "Wide\t" : "Ansi\t") << "{0x" << std::setfill('0') << std::setw(3) << StrLength
+                      << "}\t" << str << std::endl;
             }
             else
             {
@@ -96,17 +91,24 @@ std::string GetFNameFromID(uint32 index)
 
     kaddr StrPtr = FNameEntry + Offsets.FNameEntry.StringName;
     int StrLength = FNameEntryHeader >> Offsets.FNameEntryHeader.StringLenBit;
-    if (StrLength > 0 && StrLength < 250)
+    std::string Name;
+    if (StrLength > 0)
     {
         bool wide = FNameEntryHeader & Offsets.FNameEntryHeader.bIsWide;
         if (wide)
         {
-            return WideStr::readString(StrPtr, StrLength);
+            Name = Tools::WideStr::readString(StrPtr, StrLength);
         }
         else
         {
-            return Tools::readString(StrPtr, StrLength);
+            Name = Tools::readString(StrPtr, StrLength);
         }
+        size_t Pos = Name.rfind('/');
+        if (Pos != std::string::npos)
+        {
+            Name = Name.substr(Pos + 1);
+        }
+        return Name;
     }
     else
     {
@@ -134,7 +136,7 @@ void DumpActors(std::string outputpath)
             if (UObject::isValid(actor))
             {
                 actorlist << "Id: " << std::setw(3) << std::right << std::setbase(10) << i << ", Addr: 0x" << std::hex
-                          << actor << ", ActorName: " << UObject::getName(actor) << std::endl;
+                          << actor << ", ActorName: " << UStruct::getCPPName(actor) << std::endl;
             }
         }
     }
@@ -154,33 +156,355 @@ int32 GetObjectCount()
                               Offsets.TUObjectArray.NumElements);
 }
 
+std::string GetOuterFullName(kaddr uobj)
+{
+    std::string fullname = UObject::getName(uobj);
+    kaddr Outer = UObject::getOuter(uobj);
+    while (Outer)
+    {
+        fullname = UObject::getName(Outer) + '.' + fullname;
+        Outer = UObject::getOuter(Outer);
+    }
+    return fullname;
+}
+// 添加分类函数
+ObjectType ClassifyObject(kaddr classPtr)
+{
+    // 遍历继承链
+    kaddr currentClass = classPtr;
+    while (currentClass)
+    {
+        if (currentClass == objectFullName.EngineActor)
+        {
+            return ObjectType::ACTOR;
+        }
+        else if (currentClass == objectFullName.CoreEnum)
+        {
+            return ObjectType::ENUM;
+        }
+        else if (currentClass == objectFullName.CoreClass)
+        {
+            return ObjectType::CLASS;
+        }
+        else if (currentClass == objectFullName.CoreFunction)
+        {
+            return ObjectType::FUNCTION;
+        }
+        else if (currentClass == objectFullName.CoreScriptStruct)
+        {
+            return ObjectType::STRUCT;
+        }
+
+        // 继续向上查找父类
+        currentClass = UStruct::getSuperClass(currentClass);
+    }
+
+    return ObjectType::OTHER;
+}
+
 void DumpObjects(std::string outputpath)
 {
     std::ofstream obj(outputpath + "/Objects.txt", std::ofstream::out);
     if (obj.is_open())
     {
         int32 count = GetObjectCount();
-        if (count < 10 || count > 999999)
-        {
-            count = 300000;
-        }
-
         std::cout << "[3] Dumping Objects ---" << std::endl;
         std::cout << "Total Objects: " << count << std::endl;
+
+        obj << "============ Core Object ==========\n" << std::endl;
+        // 遍历查找核心对象
+        for (int32 i = 0; i < count; i++)
+        {
+            kaddr uobj = GetUObjectFromID(i);
+            if (UObject::isValid(uobj))
+            {
+                std::string outerFullName = GetOuterFullName(uobj);
+
+                // 查找并保存核心对象地址
+                if (Tools::isEqual(outerFullName, "CoreUObject.Object"))
+                {
+                    objectFullName.CoreObject = uobj;
+                    obj << "CoreUObject.Object: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "Engine.Actor"))
+                {
+                    objectFullName.EngineActor = uobj;
+                    obj << "Engine.Actor: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.Enum"))
+                {
+                    objectFullName.CoreEnum = uobj;
+                    obj << "CoreUObject.Enum: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.Class"))
+                {
+                    objectFullName.CoreClass = uobj;
+                    obj << "CoreUObject.Class: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.Function"))
+                {
+                    objectFullName.CoreFunction = uobj;
+                    obj << "CoreUObject.Function: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.ScriptStruct"))
+                {
+                    objectFullName.CoreScriptStruct = uobj;
+                    obj << "CoreUObject.ScriptStruct: 0x" << std::hex << uobj << std::endl;
+                }
+            }
+        }
+
+        // 基于核心对象分类处理所有对象
+        obj << "\n====== Object Classification ======\n" << std::endl;
+        std::vector<kaddr> enumObjects;
+        std::vector<kaddr> classObjects;
+
+        // 统计计数器
+        int32 actorCount = 0, enumCount = 0, classCount = 0, functionCount = 0, structCount = 0, otherCount = 0;
 
         for (int32 i = 0; i < count; i++)
         {
             kaddr uobj = GetUObjectFromID(i);
             if (UObject::isValid(uobj))
             {
-                obj << "[0x" << std::setfill('0') << std::setw(5) << std::hex << i << "]:" << std::endl;
-                obj << "Name:  " << UObject::getName(uobj).c_str() << std::endl;
-                obj << "Class: " << UObject::getClassName(uobj).c_str() << std::endl;
-                obj << "ObjectPtr: 0x" << std::hex << uobj << std::endl;
-                obj << "ClassPtr:  0x" << std::hex << UObject::getClass(uobj) << std::endl;
-                obj << std::endl;
+                kaddr classPtr = UObject::getClass(uobj);
+                std::string className = UObject::getClassName(uobj);
+                std::string objectName = UObject::getName(uobj);
+
+                // 构建继承链并判断对象类型
+                ObjectType objType = ClassifyObject(classPtr);
+
+                obj << "[0x" << std::setfill('0') << std::setw(5) << std::hex << i << "] " << "Ptr: 0x" << std::hex
+                    << uobj << " ";
+
+                switch (objType)
+                {
+                case ObjectType::ACTOR:
+                    obj << "[ACTOR] " << objectName << " (" << className << ")" << std::endl;
+                    actorCount++;
+                    break;
+
+                case ObjectType::ENUM:
+                    obj << "[ENUM] " << objectName << std::endl;
+                    enumObjects.push_back(uobj); // 收集枚举对象
+                    enumCount++;
+                    break;
+
+                case ObjectType::CLASS:
+                    obj << "[CLASS] " << objectName << std::endl;
+                    classObjects.push_back(uobj); // 收集类对象
+                    classCount++;
+                    break;
+
+                case ObjectType::FUNCTION:
+                    obj << "[FUNCTION] " << objectName << " in " << className << std::endl;
+                    functionCount++;
+                    break;
+
+                case ObjectType::STRUCT:
+                    obj << "[STRUCT] " << objectName << std::endl;
+                    structCount++;
+                    break;
+
+                case ObjectType::OTHER:
+                default:
+                    obj << "[OBJECT] " << objectName << " (" << className << ")" << std::endl;
+                    otherCount++;
+                    break;
+                }
             }
         }
+
+        if (!enumObjects.empty())
+        {
+            std::cout << "[3.1] Processing " << enumObjects.size() << " enums..." << std::endl;
+            ProcessAllEnums(outputpath, enumObjects);
+        }
+
+        if (!classObjects.empty())
+        {
+            std::cout << "[3.2] Processing " << classObjects.size() << " classes..." << std::endl;
+            ProcessAllClasses(outputpath, classObjects);
+        }
+
+        // 输出统计信息
+        obj << "\n====== Statistics ======" << std::endl;
+        obj << "Actors: " << std::dec << actorCount << std::endl;
+        obj << "Enums: " << enumCount << std::endl;
+        obj << "Classes: " << classCount << std::endl;
+        obj << "Functions: " << functionCount << std::endl;
+        obj << "Structs: " << structCount << std::endl;
+        obj << "Others: " << otherCount << std::endl;
+        obj << "Total: " << (actorCount + enumCount + classCount + functionCount + structCount + otherCount)
+            << std::endl;
+
+        std::cout << std::dec << "Actors: " << actorCount << ", Enums: " << enumCount << ", Classes: " << classCount
+                  << ", Functions: " << functionCount << ", Structs: " << structCount << ", Others: " << otherCount
+                  << std::endl;
+    }
+}
+
+void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects)
+{
+    std::ofstream enumFile(outputpath + "/Enum.hpp", std::ofstream::out);
+    if (!enumFile.is_open())
+    {
+        std::cerr << "Failed to open Enums.hpp for writing!" << std::endl;
+        return;
+    }
+
+    enumFile << "/*\n"
+             << " * Generated by UE SDK Dumper\n"
+             << " * Generated on: " << Tools::getCurrentTimeString() << "\n"
+             << " */\n";
+
+    for (kaddr enumObj : enumObjects)
+    {
+        std::string enumName = UObject::getName(enumObj);
+        uint32_t enumCount = UEnum::getCount(enumObj);
+        kaddr enumNamesArray = UEnum::getNameArray(enumObj);
+        uint32 maxCount = 0;
+
+        // 预扫描获取最大值
+        for (uint32 i = 0; i < enumCount; i++)
+        {
+            uint32 enum_num = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
+            if (enum_num > maxCount)
+                maxCount = enum_num;
+        }
+        std::string Type = (maxCount > 255) ? "uint32" : "uint8";
+
+        enumFile << "\n// " << UObject::getClassName(enumObj) << " " << GetOuterFullName(enumObj) << std::endl
+                 << "enum class " << enumName << " : " << Type << "\n{" << std::endl;
+
+        // 遍历枚举值
+        for (uint32 i = 0; i < enumCount; i++)
+        {
+            uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
+            uint32 enum_num = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
+
+            std::string enumValueName = GetFNameFromID(index);
+            std::string prefix = enumName + "::";
+            if (enumValueName.find(prefix) == 0)
+            {
+                enumValueName = enumValueName.substr(prefix.length());
+            }
+
+            enumFile << "\t" << std::left << std::setw(40) << enumValueName << " = " << enum_num << ",\n";
+        }
+        enumFile << "};\n";
+    }
+}
+
+std::string FormatPropertyType(kaddr prop)
+{
+    std::string cname = FField::getClassName(prop);
+    if (Tools::isEqual(cname, "NameProperty"))
+    {
+        return "FName";
+    }
+    else if (Tools::isEqual(cname, "StrProperty"))
+    {
+        return "FString";
+    }
+    else if (Tools::isEqual(cname, "TextProperty"))
+    {
+        return "FText";
+    }
+    else if (Tools::isEqual(cname, "UInt16Property"))
+    {
+        return "uint16";
+    }
+    else if (Tools::isEqual(cname, "UInt32Property"))
+    {
+        return "uint32";
+    }
+    else if (Tools::isEqual(cname, "UInt64Property"))
+    {
+        return "uint64";
+    }
+    else if (Tools::isEqual(cname, "Int8Property"))
+    {
+        return "int8";
+    }
+    else if (Tools::isEqual(cname, "Int16Property"))
+    {
+        return "int16";
+    }
+    else if (Tools::isEqual(cname, "IntProperty"))
+    {
+        return "int32";
+    }
+    else if (Tools::isEqual(cname, "Int64Property"))
+    {
+        return "int64";
+    }
+    else if (Tools::isEqual(cname, "FloatProperty"))
+    {
+        return "float";
+    }
+    else if (Tools::isEqual(cname, "DelegateProperty"))
+    {
+        return "FDelegate";
+    }
+    else if (Tools::isEqual(cname, "SoftClassProperty"))
+    {
+        return "TSoftClassPtr<UObject>";
+    }
+    else if (Tools::isEqual(cname, "MulticastDelegateProperty"))
+    {
+        return "FMulticastDelegate";
+    }
+    else if (Tools::isEqual(cname, "MulticastSparseDelegateProperty"))
+    {
+        return "FMulticastSparseDelegate";
+    }
+    else if (Tools::isEqual(cname, "MulticastInlineDelegateProperty"))
+    {
+        return "FMulticastInlineDelegate";
+    }
+    return "";
+}
+
+void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects)
+{
+    std::ofstream classFile(outputpath + "/Class.hpp", std::ofstream::out);
+    if (!classFile.is_open())
+    {
+        std::cerr << "Failed to open Enums.hpp for writing!" << std::endl;
+        return;
+    }
+
+    classFile << "/*\n"
+              << " * Generated by UE SDK Dumper\n"
+              << " * Generated on: " << Tools::getCurrentTimeString() << "\n"
+              << " */\n";
+
+    for (kaddr classObj : classObjects)
+    {
+        std::string className = UStruct::getCPPName(classObj);
+        classFile << "\n// " << UObject::getClassName(classObj) << " " << GetOuterFullName(classObj) << std::endl
+                  << "// Class Size: 0x" << std::hex << UStruct::getPropertiesSize(classObj) << std::endl;
+        classFile << "class " << className << " : public " << UStruct::getCPPName(UStruct::getSuperClass(classObj))
+                  << std::endl
+                  << "{" << std::endl;
+        // kaddr currStruct = UObject::getClass(classObj);
+
+        for (kaddr child = UStruct::getChildProperties(classObj); child; child = FField::getNext(child))
+        {
+            kaddr prop = child;
+            std::string oname = FField::getName(prop);      // 成员变量名称
+            std::string cname = FField::getClassName(prop); // 成员变量类型名称
+            std::string formattedType = FormatPropertyType(prop);
+
+            std::ostringstream line;
+            line << "\t" << std::left << std::setw(50) << cname << std::left << std::setw(50) << (oname + ";")
+                 << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
+                 << FProperty::getOffset(prop) << "(0x" << std::setfill('0') << std::setw(4) << std::hex
+                 << std::uppercase << FProperty::getElementSize(prop) << ")";
+            classFile << line.str() << std::endl;
+        }
+        classFile << "};\n";
     }
 }
 
@@ -651,32 +975,32 @@ std::list<kaddr> writeStructChild_Func(std::ofstream &sdk, kaddr childprop)
 
 void writeStruct(std::ofstream &sdk, kaddr clazz)
 {
-    std::list<kaddr> recurrce;
+    // std::list<kaddr> recurrce;
 
-    kaddr currStruct = clazz;
-    while (UObject::isValid(currStruct))
-    {
-        std::string name = UObject::getName(currStruct);
-        if (Tools::isEqual(name, "None") || Tools::isContain(name, "/Game/") || Tools::isContain(name, "_png") ||
-            name.empty())
-        {
-            break;
-        }
+    // kaddr currStruct = clazz;
+    // while (UObject::isValid(currStruct))
+    // {
+    //     std::string name = UObject::getName(currStruct);
+    //     if (Tools::isEqual(name, "None") || Tools::isContain(name, "/Game/") || Tools::isContain(name, "_png") ||
+    //         name.empty())
+    //     {
+    //         break;
+    //     }
 
-        uint32 NameID = UObject::getNameID(currStruct);
-        if (!isScanned(NameID))
-        {
-            structIDMap.push_back(NameID);
-            sdk << "Class: " << UStruct::getStructClassPath(currStruct) << std::endl;
-            recurrce.merge(writeStructChild(sdk, UStruct::getChildProperties(currStruct)));
-            recurrce.merge(writeStructChild_Func(sdk, UStruct::getChildren(currStruct)));
-            sdk << "\n------------------------------------" << std::endl;
-        }
-        currStruct = UStruct::getSuperClass(currStruct);
-    }
+    //     uint32 NameID = UObject::getNameID(currStruct);
+    //     if (!isScanned(NameID))
+    //     {
+    //         structIDMap.push_back(NameID);
+    //         sdk << "Class: " << UStruct::getStructClassPath(currStruct) << std::endl;
+    //         recurrce.merge(writeStructChild(sdk, UStruct::getChildProperties(currStruct)));
+    //         recurrce.merge(writeStructChild_Func(sdk, UStruct::getChildren(currStruct)));
+    //         sdk << "\n------------------------------------" << std::endl;
+    //     }
+    //     currStruct = UStruct::getSuperClass(currStruct);
+    // }
 
-    for (auto it = recurrce.begin(); it != recurrce.end(); ++it)
-        writeStruct(sdk, *it);
+    // for (auto it = recurrce.begin(); it != recurrce.end(); ++it)
+    //     writeStruct(sdk, *it);
 }
 
 void DumpSDK(std::string outputpath)
