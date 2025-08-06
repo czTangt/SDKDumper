@@ -73,18 +73,30 @@ struct UStruct
     static std::string getCPPName(kaddr object)
     {
         std::string name = UObject::getName(object);
-        for (kaddr uStruct = object; uStruct; uStruct = UStruct::getSuperClass(uStruct))
+
+        // 直接使用现有的分类函数
+        ObjectType objType = ClassifyObject(UObject::getClass(object));
+
+        switch (objType)
         {
-            if (uStruct == objectFullName.EngineActor)
-            {
-                return "A" + name;
-            }
-            else if (uStruct == objectFullName.CoreObject)
-            {
-                return "U" + name;
-            }
+        case ObjectType::ACTOR:
+            return "A" + name;
+
+        case ObjectType::CLASS:
+            return "U" + name; // UClass 类型
+
+        case ObjectType::ENUM:
+            return "E" + name; // 枚举类型
+
+        case ObjectType::FUNCTION:
+            return "U" + name; // UFunction 类型
+
+        case ObjectType::STRUCT:
+            return "F" + name; // 结构体类型
+
+        case ObjectType::OTHER:
+            return "F" + name; // 默认为结构体
         }
-        return "F" + name;
     }
 };
 

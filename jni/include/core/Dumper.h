@@ -37,8 +37,9 @@ void DumpActors(std::string outputpath);
 void DumpObjects(std::string outputpath);
 
 void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects);
-void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects);
 std::string FormatPropertyType(kaddr prop);
+void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects);
+void ProcessAllFunctions(std::string outputpath, const std::vector<kaddr> &functionObjects);
 
 void DumpSDK(std::string outputpath);
 
