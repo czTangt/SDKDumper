@@ -21,6 +21,7 @@
 
 using namespace std;
 
+// 配置 app 信息
 string pkg("com.tencent.ace.match2024");
 string outputpath("/sdcard/Download/match2024");
 static const char *lib_name = "libUE4.so";
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
     cout << lib_name << ": base_addr: 0x" << std::hex << Tools::lib_range.base << ", end_addr: 0x"
          << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
 
+    // dump strings, actors, sdk
     DumpStrings(outputpath);
     DumpActors(outputpath);
     DumpSDK(outputpath);

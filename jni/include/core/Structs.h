@@ -59,7 +59,6 @@ struct UStruct
     {
         std::string name = UObject::getName(object);
 
-        // 直接使用现有的分类函数
         ObjectType objType = ClassifyObject(UObject::getClass(object));
 
         switch (objType)

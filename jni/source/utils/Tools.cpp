@@ -42,6 +42,7 @@ pid_t getTargetPid(const char *process_name)
         return -1;
     }
 
+    // 遍历 /proc 目录，查找匹配的进程
     struct dirent *entry;
     while ((entry = readdir(dir)) != nullptr)
     {
@@ -83,6 +84,7 @@ ModuleRange getModuleRange(pid_t pid, const char *module_name)
     if (!maps_file)
         return lib_range;
 
+    // 读取 maps 文件，查找指定模块的地址范围
     std::string line;
     bool found = false;
     while (std::getline(maps_file, line))

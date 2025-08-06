@@ -27,32 +27,32 @@ extern ModuleRange lib_range;
  */
 bool pvm(void *address, void *buffer, size_t size, bool iswrite);
 
-// Process Virtual Memory Reader
+// 处理器虚拟内存读取
 bool vm_readv(void *address, void *buffer, size_t size);
 
-// Process Virtual Memory Writer
+// 处理器虚拟内存写入
 bool vm_writev(void *address, void *buffer, size_t size);
 
-// get the PID of a target process by its name.
+// 通过进程名获取目标进程的PID
 pid_t getTargetPid(const char *process_name);
 
-// get the base address of a module by its name.
+// 通过进程PID和模块名获取模块范围
 ModuleRange getModuleRange(pid_t pid, const char *module_name);
 
-// read a string from a given address with a specified size.
+// 读取指定地址和大小的字符串
 std::string readString(kaddr address, unsigned int size);
 
-// convert a kaddr offset to a real memory address.
+// 转换 kaddr 偏移到实际内存地址
 kaddr getRealOffset(kaddr offset);
-// read a pointer value from a given address.
+// 根据地址读取指针值
 kaddr getPtr(kaddr address);
 
-// check if a string is equal to a given C-style string.
+// 检测字符串是否与给定的C风格字符串相等。
 bool isEqual(std::string s1, const char *check);
-// check if a string contains a substring.
+// 检测字符串是否包含子字符串。
 bool isContain(std::string str, std::string check);
 
-// read single value
+// 读取指定地址的单个值
 template <typename T> T Read(kaddr address)
 {
     T data{};
@@ -60,13 +60,13 @@ template <typename T> T Read(kaddr address)
     return data;
 }
 
-// write single value
+// 写入单个值到指定地址
 template <typename T> void Write(kaddr address, const T &data)
 {
     vm_writev(reinterpret_cast<void *>(address), &data, sizeof(T));
 }
 
-// read array as std::vector
+// 读取指定地址的数组并返回 std::vector
 template <typename T> std::vector<T> ReadArr(kaddr address, unsigned int size)
 {
     std::vector<T> data(size);
@@ -75,6 +75,7 @@ template <typename T> std::vector<T> ReadArr(kaddr address, unsigned int size)
     return data;
 }
 
+// 宽字符串转换
 struct WideStr
 {
     static std::string readString(kaddr StrPtr, int StrLength)
@@ -127,6 +128,7 @@ struct WideStr
     }
 };
 
+// 获取当前时间字符串
 std::string getCurrentTimeString();
 
 } // namespace Tools
