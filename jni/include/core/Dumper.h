@@ -3,6 +3,7 @@
 
 #include "Offsets.h"
 #include "Tools.h"
+#include <map>
 #include <sstream>
 
 inline struct ObjectFullName
