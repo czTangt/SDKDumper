@@ -126,16 +126,6 @@ kaddr getPtr(kaddr address)
     return Read<kaddr>(address);
 }
 
-int32 getInt32(kaddr address)
-{
-    return Read<int32>(address);
-}
-
-uint8 getUInt8(kaddr address)
-{
-    return Read<uint8>(address);
-}
-
 bool isEqual(std::string s1, const char *check)
 {
     std::string s2(check);
@@ -146,11 +136,6 @@ bool isContain(std::string str, std::string check)
 {
     size_t found = str.find(check);
     return (found != std::string::npos);
-}
-
-bool isStartWith(std::string str, const char *check)
-{
-    return (str.rfind(check, 0) == 0);
 }
 
 std::string getCurrentTimeString()

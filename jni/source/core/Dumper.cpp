@@ -167,7 +167,7 @@ std::string GetOuterFullName(kaddr uobj)
     }
     return fullname;
 }
-// 添加分类函数
+
 ObjectType ClassifyObject(kaddr classPtr)
 {
     // 遍历继承链
@@ -200,208 +200,6 @@ ObjectType ClassifyObject(kaddr classPtr)
     }
 
     return ObjectType::OTHER;
-}
-
-void DumpObjects(std::string outputpath)
-{
-    std::ofstream obj(outputpath + "/Objects.txt", std::ofstream::out);
-    if (obj.is_open())
-    {
-        int32 count = GetObjectCount();
-        std::cout << "[3] Dumping Objects ---" << std::endl;
-        std::cout << "Total Objects: " << count << std::endl;
-
-        obj << "============ Core Object ==========\n" << std::endl;
-        // 遍历查找核心对象
-        for (int32 i = 0; i < count; i++)
-        {
-            kaddr uobj = GetUObjectFromID(i);
-            if (UObject::isValid(uobj))
-            {
-                std::string outerFullName = GetOuterFullName(uobj);
-
-                // 查找并保存核心对象地址
-                if (Tools::isEqual(outerFullName, "CoreUObject.Object"))
-                {
-                    objectFullName.CoreObject = uobj;
-                    obj << "CoreUObject.Object: 0x" << std::hex << uobj << std::endl;
-                }
-                else if (Tools::isEqual(outerFullName, "Engine.Actor"))
-                {
-                    objectFullName.EngineActor = uobj;
-                    obj << "Engine.Actor: 0x" << std::hex << uobj << std::endl;
-                }
-                else if (Tools::isEqual(outerFullName, "CoreUObject.Enum"))
-                {
-                    objectFullName.CoreEnum = uobj;
-                    obj << "CoreUObject.Enum: 0x" << std::hex << uobj << std::endl;
-                }
-                else if (Tools::isEqual(outerFullName, "CoreUObject.Class"))
-                {
-                    objectFullName.CoreClass = uobj;
-                    obj << "CoreUObject.Class: 0x" << std::hex << uobj << std::endl;
-                }
-                else if (Tools::isEqual(outerFullName, "CoreUObject.Function"))
-                {
-                    objectFullName.CoreFunction = uobj;
-                    obj << "CoreUObject.Function: 0x" << std::hex << uobj << std::endl;
-                }
-                else if (Tools::isEqual(outerFullName, "CoreUObject.ScriptStruct"))
-                {
-                    objectFullName.CoreScriptStruct = uobj;
-                    obj << "CoreUObject.ScriptStruct: 0x" << std::hex << uobj << std::endl;
-                }
-            }
-        }
-
-        // 基于核心对象分类处理所有对象
-        obj << "\n====== Object Classification ======\n" << std::endl;
-        std::vector<kaddr> enumObjects;
-        std::vector<kaddr> classObjects;
-        std::vector<kaddr> functionObjects;
-
-        // 统计计数器
-        int32 actorCount = 0, enumCount = 0, classCount = 0, functionCount = 0, structCount = 0, otherCount = 0;
-
-        for (int32 i = 0; i < count; i++)
-        {
-            kaddr uobj = GetUObjectFromID(i);
-            if (UObject::isValid(uobj))
-            {
-                kaddr classPtr = UObject::getClass(uobj);
-                std::string className = UObject::getClassName(uobj);
-                std::string objectName = UObject::getName(uobj);
-
-                // 构建继承链并判断对象类型
-                ObjectType objType = ClassifyObject(classPtr);
-
-                obj << "[0x" << std::setfill('0') << std::setw(5) << std::hex << i << "] " << "Ptr: 0x" << std::hex
-                    << uobj << " ";
-
-                switch (objType)
-                {
-                case ObjectType::ACTOR:
-                    obj << "[ACTOR] " << objectName << " (" << className << ")" << std::endl;
-                    actorCount++;
-                    break;
-
-                case ObjectType::ENUM:
-                    obj << "[ENUM] " << objectName << std::endl;
-                    enumObjects.push_back(uobj); // 收集枚举对象
-                    enumCount++;
-                    break;
-
-                case ObjectType::CLASS:
-                    obj << "[CLASS] " << objectName << std::endl;
-                    classObjects.push_back(uobj); // 收集类对象
-                    classCount++;
-                    break;
-
-                case ObjectType::FUNCTION:
-                    obj << "[FUNCTION] " << objectName << " in " << className << std::endl;
-                    functionObjects.push_back(uobj);
-                    functionCount++;
-                    break;
-
-                case ObjectType::STRUCT:
-                    obj << "[STRUCT] " << objectName << std::endl;
-                    structCount++;
-                    break;
-
-                case ObjectType::OTHER:
-                default:
-                    obj << "[OBJECT] " << objectName << " (" << className << ")" << std::endl;
-                    otherCount++;
-                    break;
-                }
-            }
-        }
-
-        if (!enumObjects.empty())
-        {
-            std::cout << "[3.1] Processing " << enumObjects.size() << " enums..." << std::endl;
-            ProcessAllEnums(outputpath, enumObjects);
-        }
-
-        if (!classObjects.empty())
-        {
-            std::cout << "[3.2] Processing " << classObjects.size() << " classes..." << std::endl;
-            ProcessAllClasses(outputpath, classObjects);
-        }
-
-        if (!functionObjects.empty())
-        {
-            std::cout << "[3.3] Processing " << functionObjects.size() << " functions..." << std::endl;
-            ProcessAllFunctions(outputpath, functionObjects);
-        }
-
-        // 输出统计信息
-        obj << "\n====== Statistics ======" << std::endl;
-        obj << "Actors: " << std::dec << actorCount << std::endl;
-        obj << "Enums: " << enumCount << std::endl;
-        obj << "Classes: " << classCount << std::endl;
-        obj << "Functions: " << functionCount << std::endl;
-        obj << "Structs: " << structCount << std::endl;
-        obj << "Others: " << otherCount << std::endl;
-        obj << "Total: " << (actorCount + enumCount + classCount + functionCount + structCount + otherCount)
-            << std::endl;
-
-        std::cout << std::dec << "Actors: " << actorCount << ", Enums: " << enumCount << ", Classes: " << classCount
-                  << ", Functions: " << functionCount << ", Structs: " << structCount << ", Others: " << otherCount
-                  << std::endl;
-    }
-}
-
-void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects)
-{
-    std::ofstream enumFile(outputpath + "/Enum.hpp", std::ofstream::out);
-    if (!enumFile.is_open())
-    {
-        std::cerr << "Failed to open Enums.hpp for writing!" << std::endl;
-        return;
-    }
-
-    enumFile << "/*\n"
-             << " * Generated by UE SDK Dumper\n"
-             << " * Generated on: " << Tools::getCurrentTimeString() << "\n"
-             << " */\n";
-
-    for (kaddr enumObj : enumObjects)
-    {
-        std::string enumName = UObject::getName(enumObj);
-        uint32_t enumCount = UEnum::getCount(enumObj);
-        kaddr enumNamesArray = UEnum::getNameArray(enumObj);
-        uint32 maxCount = 0;
-
-        // 预扫描获取最大值
-        for (uint32 i = 0; i < enumCount; i++)
-        {
-            uint32 enum_num = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
-            if (enum_num > maxCount)
-                maxCount = enum_num;
-        }
-        std::string Type = (maxCount > 255) ? "uint32" : "uint8";
-
-        enumFile << "\n// " << UObject::getClassName(enumObj) << " " << GetOuterFullName(enumObj) << std::endl
-                 << "enum class " << enumName << " : " << Type << "\n{" << std::endl;
-
-        // 遍历枚举值
-        for (uint32 i = 0; i < enumCount; i++)
-        {
-            uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
-            uint32 enum_num = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
-
-            std::string enumValueName = GetFNameFromID(index);
-            std::string prefix = enumName + "::";
-            if (enumValueName.find(prefix) == 0)
-            {
-                enumValueName = enumValueName.substr(prefix.length());
-            }
-
-            enumFile << "\t" << std::left << std::setw(40) << enumValueName << " = " << enum_num << ",\n";
-        }
-        enumFile << "};\n";
-    }
 }
 
 std::string FormatPropertyType(kaddr prop)
@@ -493,11 +291,15 @@ std::string FormatPropertyType(kaddr prop)
         {
             return "bool"; // 如果是单个布尔值
         }
-        return "char";
+        uint32 ByteOffset = FBoolProperty::getByteOffset(prop);
+        uint32 FieldMask = FBoolProperty::getFieldMask(prop);
+        return "uint8(ByteOffset: " + std::to_string(ByteOffset) + " FieldMask: " + std::to_string(FieldMask) + ")";
     }
     else if (Tools::isEqual(cname, "ByteProperty"))
     {
-        return "enum class " + UObject::getName(FByteProperty::getEnum(prop));
+        if (UObject::isValid(FByteProperty::getEnum(prop)))
+            return "enum class " + UObject::getName(FByteProperty::getEnum(prop));
+        return "byte";
     }
     else if (Tools::isEqual(cname, "ClassProperty"))
     {
@@ -505,7 +307,8 @@ std::string FormatPropertyType(kaddr prop)
     }
     else if (Tools::isEqual(cname, "StructProperty"))
     {
-        return FProperty::getPropCPPName(prop); // 返回结构体指针类型
+        return UStruct::getCPPName(FStructProperty::getStruct(prop));
+        // return FProperty::getPropCPPName(prop);
     }
     else if (Tools::isEqual(cname, "InterfaceProperty"))
     {
@@ -513,7 +316,8 @@ std::string FormatPropertyType(kaddr prop)
     }
     else if (Tools::isEqual(cname, "ObjectPropertyBase"))
     {
-        return FProperty::getPropCPPName(prop);
+        return UStruct::getCPPName(FObjectPropertyBase::getPropertyClass(prop)) + "*";
+        // return FProperty::getPropCPPName(prop);
     }
     else if (Tools::isEqual(cname, "ArrayProperty"))
     {
@@ -521,14 +325,224 @@ std::string FormatPropertyType(kaddr prop)
     }
     else if (Tools::isEqual(cname, "WeakObjectProperty"))
     {
-        return "TWeakObjectPtr<" + UStruct::getCPPName(FClassProperty::getMetaClass(prop)) + ">";
+        return "TWeakObjectPtr<" + UStruct::getCPPName(FStructProperty::getStruct(prop)) + ">";
     }
     else if (Tools::isEqual(cname, "SoftObjectProperty"))
     {
-        return "TSoftObjectPtr<" + UStruct::getCPPName(FClassProperty::getMetaClass(prop)) + ">";
+        return "TSoftObjectPtr<" + UStruct::getCPPName(FObjectPropertyBase::getPropertyClass(prop)) + ">";
     }
 
     return FProperty::getPropCPPName(prop) + "*"; // 默认返回指针类型
+}
+
+void DumpSDK(std::string outputpath)
+{
+    std::ofstream obj(outputpath + "/Objects.txt", std::ofstream::out);
+    if (obj.is_open())
+    {
+        int32 count = GetObjectCount();
+        std::cout << "[3] Dumping Objects ---" << std::endl;
+        std::cout << "Total Objects: " << count << std::endl;
+
+        obj << "============ Core Object ==========\n" << std::endl;
+        // 遍历查找核心对象
+        for (int32 i = 0; i < count; i++)
+        {
+            kaddr uobj = GetUObjectFromID(i);
+            if (UObject::isValid(uobj))
+            {
+                std::string outerFullName = GetOuterFullName(uobj);
+
+                // 查找并保存核心对象地址
+                if (Tools::isEqual(outerFullName, "CoreUObject.Object"))
+                {
+                    objectFullName.CoreObject = uobj;
+                    obj << "CoreUObject.Object: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "Engine.Actor"))
+                {
+                    objectFullName.EngineActor = uobj;
+                    obj << "Engine.Actor: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.Enum"))
+                {
+                    objectFullName.CoreEnum = uobj;
+                    obj << "CoreUObject.Enum: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.Class"))
+                {
+                    objectFullName.CoreClass = uobj;
+                    obj << "CoreUObject.Class: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.Function"))
+                {
+                    objectFullName.CoreFunction = uobj;
+                    obj << "CoreUObject.Function: 0x" << std::hex << uobj << std::endl;
+                }
+                else if (Tools::isEqual(outerFullName, "CoreUObject.ScriptStruct"))
+                {
+                    objectFullName.CoreScriptStruct = uobj;
+                    obj << "CoreUObject.ScriptStruct: 0x" << std::hex << uobj << std::endl;
+                }
+            }
+        }
+
+        // 基于核心对象分类处理所有对象
+        obj << "\n====== Object Classification ======\n" << std::endl;
+        std::vector<kaddr> enumObjects;
+        std::vector<kaddr> classObjects;
+        std::vector<kaddr> functionObjects;
+        std::vector<kaddr> structObjects;
+
+        // 统计计数器
+        int32 actorCount = 0, enumCount = 0, classCount = 0, functionCount = 0, structCount = 0, otherCount = 0;
+
+        for (int32 i = 0; i < count; i++)
+        {
+            kaddr uobj = GetUObjectFromID(i);
+            if (UObject::isValid(uobj))
+            {
+                kaddr classPtr = UObject::getClass(uobj);
+                std::string className = UObject::getClassName(uobj);
+                std::string objectName = UObject::getName(uobj);
+
+                // 构建继承链并判断对象类型
+                ObjectType objType = ClassifyObject(classPtr);
+
+                obj << "[0x" << std::setfill('0') << std::setw(5) << std::hex << i << "] " << "Ptr: 0x" << std::hex
+                    << uobj << " ";
+
+                switch (objType)
+                {
+                case ObjectType::ACTOR:
+                    obj << "[ACTOR] " << objectName << " (" << className << ")" << std::endl;
+                    actorCount++;
+                    break;
+
+                case ObjectType::ENUM:
+                    obj << "[ENUM] " << objectName << std::endl;
+                    enumObjects.push_back(uobj); // 收集枚举对象
+                    enumCount++;
+                    break;
+
+                case ObjectType::CLASS:
+                    obj << "[CLASS] " << objectName << std::endl;
+                    classObjects.push_back(uobj); // 收集类对象
+                    classCount++;
+                    break;
+
+                case ObjectType::FUNCTION:
+                    obj << "[FUNCTION] " << objectName << " in " << className << std::endl;
+                    functionObjects.push_back(uobj);
+                    functionCount++;
+                    break;
+
+                case ObjectType::STRUCT:
+                    obj << "[STRUCT] " << objectName << std::endl;
+                    structObjects.push_back(uobj);
+                    structCount++;
+                    break;
+
+                case ObjectType::OTHER:
+                default:
+                    obj << "[OBJECT] " << objectName << " (" << className << ")" << std::endl;
+                    otherCount++;
+                    break;
+                }
+            }
+        }
+
+        if (!enumObjects.empty())
+        {
+            std::cout << "[3.1] Processing " << enumObjects.size() << " enums..." << std::endl;
+            ProcessAllEnums(outputpath, enumObjects);
+        }
+
+        if (!classObjects.empty())
+        {
+            std::cout << "[3.2] Processing " << classObjects.size() << " classes..." << std::endl;
+            ProcessAllClasses(outputpath, classObjects);
+        }
+
+        if (!functionObjects.empty())
+        {
+            std::cout << "[3.3] Processing " << functionObjects.size() << " functions..." << std::endl;
+            ProcessAllFunctions(outputpath, functionObjects);
+        }
+
+        if (!structObjects.empty())
+        {
+            std::cout << "[3.4] Processing " << structObjects.size() << " structs..." << std::endl;
+            ProcessAllStructs(outputpath, structObjects);
+        }
+
+        // 输出统计信息
+        obj << "\n====== Statistics ======" << std::endl;
+        obj << "Actors: " << std::dec << actorCount << std::endl;
+        obj << "Enums: " << enumCount << std::endl;
+        obj << "Classes: " << classCount << std::endl;
+        obj << "Functions: " << functionCount << std::endl;
+        obj << "Structs: " << structCount << std::endl;
+        obj << "Others: " << otherCount << std::endl;
+        obj << "Total: " << (actorCount + enumCount + classCount + functionCount + structCount + otherCount)
+            << std::endl;
+
+        std::cout << std::dec << "Actors: " << actorCount << ", Enums: " << enumCount << ", Classes: " << classCount
+                  << ", Functions: " << functionCount << ", Structs: " << structCount << ", Others: " << otherCount
+                  << std::endl;
+    }
+}
+
+void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects)
+{
+    std::ofstream enumFile(outputpath + "/Enum.hpp", std::ofstream::out);
+    if (!enumFile.is_open())
+    {
+        std::cerr << "Failed to open Enums.hpp for writing!" << std::endl;
+        return;
+    }
+
+    enumFile << "/*\n"
+             << " * Generated by UE SDK Dumper\n"
+             << " * Generated on: " << Tools::getCurrentTimeString() << "\n"
+             << " */\n";
+
+    for (kaddr enumObj : enumObjects)
+    {
+        std::string enumName = UObject::getName(enumObj);
+        uint32_t enumCount = UEnum::getCount(enumObj);
+        kaddr enumNamesArray = UEnum::getNameArray(enumObj);
+        uint32 maxCount = 0;
+
+        // 预扫描获取最大值
+        for (uint32 i = 0; i < enumCount; i++)
+        {
+            uint32 enum_num = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
+            if (enum_num > maxCount)
+                maxCount = enum_num;
+        }
+        std::string Type = (maxCount > 255) ? "uint32" : "uint8";
+
+        enumFile << "\n// " << UObject::getClassName(enumObj) << " " << GetOuterFullName(enumObj) << std::endl
+                 << "enum class " << enumName << " : " << Type << "\n{" << std::endl;
+
+        // 遍历枚举值
+        for (uint32 i = 0; i < enumCount; i++)
+        {
+            uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
+            uint32 enum_num = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
+
+            std::string enumValueName = GetFNameFromID(index);
+            std::string prefix = enumName + "::";
+            if (enumValueName.find(prefix) == 0)
+            {
+                enumValueName = enumValueName.substr(prefix.length());
+            }
+
+            enumFile << "\t" << std::left << std::setw(40) << enumValueName << " = " << enum_num << ",\n";
+        }
+        enumFile << "};\n";
+    }
 }
 
 void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects)
@@ -536,7 +550,7 @@ void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classOb
     std::ofstream classFile(outputpath + "/Class.hpp", std::ofstream::out);
     if (!classFile.is_open())
     {
-        std::cerr << "Failed to open Enums.hpp for writing!" << std::endl;
+        std::cerr << "Failed to open CLass.hpp for writing!" << std::endl;
         return;
     }
 
@@ -569,7 +583,7 @@ void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classOb
             uint32 size = FProperty::getElementSize(prop);  // 成员变量大小
             std::string formattedType = FormatPropertyType(prop);
 
-            if (pos < size)
+            if (pos < offset)
             {
                 int diff = offset - pos;
                 char paddingName[64];
@@ -634,7 +648,7 @@ void ProcessAllFunctions(std::string outputpath, const std::vector<kaddr> &funct
         std::string className = UStruct::getCPPName(UObject::getOuter(funcObj));
         std::string functionName = UObject::getName(funcObj);
 
-        if (functionName.find("__Delegate") != std::string::npos || functionName.find("Default__") != std::string::npos)
+        if (Tools::isContain(functionName, "Delegate") || Tools::isContain(functionName, "Default__"))
             continue;
 
         classFunctionMap[className].push_back(funcObj);
@@ -691,519 +705,85 @@ void ProcessAllFunctions(std::string outputpath, const std::vector<kaddr> &funct
     }
 }
 
-std::vector<uint32> structIDMap;
-
-bool isScanned(uint32 id)
+void ProcessAllStructs(std::string outputpath, const std::vector<kaddr> &structObjects)
 {
-    for (int i = 0; i < structIDMap.size(); i++)
+    std::ofstream structFile(outputpath + "/Struct.hpp", std::ofstream::out);
+    if (!structFile.is_open())
     {
-        if (structIDMap[i] == id)
-        {
-            return true;
-        }
+        std::cerr << "Failed to open Struct.hpp for writing!" << std::endl;
+        return;
     }
-    return false;
-}
 
-std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop)
-{
-    if (prop)
+    structFile << "/*\n"
+               << " * Generated by UE SDK Dumper\n"
+               << " * Generated on: " << Tools::getCurrentTimeString() << "\n"
+               << " */\n";
+
+    for (kaddr structObj : structObjects)
     {
-        std::string cname = FField::getClassName(prop);
+        int pos = 0;
+        std::string structName = UStruct::getCPPName(structObj);
+        uint32 structSize = UStruct::getPropertiesSize(structObj);
+        kaddr superClass = UStruct::getSuperClass(structObj);
+        if (superClass)
+        {
+            pos = UStruct::getPropertiesSize(superClass);
+        }
 
-        if (Tools::isEqual(cname, "ByteProperty"))
-        {
-            kaddr enumObj = FByteProperty::getEnum(prop);
-            std::string enumName = UObject::getName(enumObj);
-            // std::cout << "\tenum " << enumName << " " << cname << " : byte"
-            //           << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-            //           << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+        structFile << "\n// " << UObject::getClassName(structObj) << " " << GetOuterFullName(structObj) << std::endl
+                   << "// Struct Size: 0x" << std::hex << structSize << std::endl;
+        structFile << "class " << structName << " : public " << UStruct::getCPPName(superClass) << std::endl
+                   << "{" << std::endl;
 
-            // if (UObject::isValid(enumObj))
-            // {
-            //     std::cout << "\t{" << std::endl;
-            //     kaddr enumNamesArray = UEnum::getNameArray(enumObj);
-            //     for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
-            //     {
-            //         uint32 index =
-            //             Tools::Read<uint32>(enumNamesArray + i * Offsets.UEnum.enumItemSize +
-            // Offsets.TPair.Key);
-            //         uint32 enum_num =
-            //             Tools::Read<uint32>(enumNamesArray + i * Offsets.UEnum.enumItemSize +
-            //             Offsets.TPair.Value);
-            //         std::string enumValueName = GetFNameFromID(index);
-            //         std::string prefix = enumName + "::";
-            //         if (enumValueName.find(prefix) == 0)
-            //         {
-            //             enumValueName = enumValueName.substr(prefix.length());
-            //         }
+        for (kaddr prop = UStruct::getChildProperties(structObj); prop; prop = FField::getNext(prop))
+        {
+            std::string oname = FField::getName(prop);      // 成员变量名称
+            std::string cname = FField::getClassName(prop); // 成员变量类型名称
+            uint32 offset = FProperty::getOffset(prop);     // 成员变量偏移
+            uint32 size = FProperty::getElementSize(prop);  // 成员变量大小
+            std::string formattedType = FormatPropertyType(prop);
 
-            //         std::cout << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
-            //     }
-            //     std::cout << "\t}" << std::endl;
-            // }
-            return "byte";
-        }
-        else if (Tools::isEqual(cname, "UInt16Property"))
-        {
-            return "uint16";
-        }
-        else if (Tools::isEqual(cname, "UInt32Property"))
-        {
-            return "uint32";
-        }
-        else if (Tools::isEqual(cname, "UInt64Property"))
-        {
-            return "uint64";
-        }
-        else if (Tools::isEqual(cname, "Int8Property"))
-        {
-            return "int8";
-        }
-        else if (Tools::isEqual(cname, "Int16Property"))
-        {
-            return "int16";
-        }
-        else if (Tools::isEqual(cname, "IntProperty"))
-        {
-            return "int32";
-        }
-        else if (Tools::isEqual(cname, "Int64Property"))
-        {
-            return "int64";
-        }
-        else if (Tools::isEqual(cname, "BoolProperty"))
-        {
-            return "bool";
-        }
-        else if (Tools::isEqual(cname, "FloatProperty"))
-        {
-            return "float";
-        }
-        else if (Tools::isEqual(cname, "DoubleProperty"))
-        {
-            return "double";
-        }
-        else if (Tools::isEqual(cname, "ObjectProperty") || Tools::isEqual(cname, "WeakObjectProperty") ||
-                 Tools::isEqual(cname, "LazyObjectProperty") || Tools::isEqual(cname, "AssetObjectProperty") ||
-                 Tools::isEqual(cname, "SoftObjectProperty"))
-        {
-            kaddr propertyClass = FObjectProperty::getPropertyClass(prop);
-            recurrce.push_back(propertyClass);
-            return UObject::getName(propertyClass) + "*";
-        }
-        else if (Tools::isEqual(cname, "ClassProperty") || Tools::isEqual(cname, "AssetClassProperty") ||
-                 Tools::isEqual(cname, "SoftClassProperty"))
-        {
-            kaddr metaClass = FClassProperty::getMetaClass(prop);
-            recurrce.push_back(metaClass);
-            return "class " + UObject::getName(metaClass);
-        }
-        else if (Tools::isEqual(cname, "InterfaceProperty"))
-        {
-            kaddr interfaceClass = FInterfaceProperty::getInterfaceClass(prop);
-            recurrce.push_back(interfaceClass);
-            return "interface class " + UObject::getName(interfaceClass);
-        }
-        else if (Tools::isEqual(cname, "NameProperty"))
-        {
-            return "FName";
-        }
-        else if (Tools::isEqual(cname, "StructProperty"))
-        {
-            kaddr Struct = FStructProperty::getStruct(prop);
-            recurrce.push_back(Struct);
-            return UObject::getName(Struct);
-        }
-        else if (Tools::isEqual(cname, "StrProperty"))
-        {
-            return "FString";
-        }
-        else if (Tools::isEqual(cname, "TextProperty"))
-        {
-            return "FText";
-        }
-        else if (Tools::isEqual(cname, "ArrayProperty"))
-        {
-            return resolveProp(recurrce, FArrayProperty::getInner(prop)) + "[]";
-        }
-        else if (Tools::isEqual(cname, "DelegateProperty") || Tools::isEqual(cname, "MulticastDelegateProperty"))
-        {
-            return "delegate";
-        }
-        else if (Tools::isEqual(cname, "MapProperty"))
-        {
-            return "<" + resolveProp(recurrce, FMapProperty::getKeyProp(prop)) + "," +
-                   resolveProp(recurrce, FMapProperty::getValueProp(prop)) + ">";
-        }
-        else if (Tools::isEqual(cname, "SetProperty"))
-        {
-            return "<" + resolveProp(recurrce, FSetProperty::getElementProp(prop)) + ">";
-        }
-        else if (Tools::isEqual(cname, "EnumProperty"))
-        {
-            return "enum";
-        }
-        else
-        {
-            return FField::getName(prop) + "(" + cname + ")";
-        }
-    }
-    return "NULL";
-}
-
-std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop)
-{
-    std::list<kaddr> recurrce;
-    kaddr child = childprop;
-    while (child)
-    {
-        kaddr prop = child;
-        std::string oname = FField::getName(prop);      // 成员变量名称
-        std::string cname = FField::getClassName(prop); // 成员变量类型名称
-
-        if (Tools::isEqual(cname, "ByteProperty"))
-        {
-            kaddr enumObj = FByteProperty::getEnum(prop);
-            std::string enumName = UObject::getName(enumObj);
-            sdk << "\tenum " << enumName << " " << oname << " : byte"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-
-            if (UObject::isValid(enumObj))
+            if (pos < offset)
             {
-                sdk << "\t{" << std::endl;
-                kaddr enumNamesArray = UEnum::getNameArray(enumObj);
-                for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
-                {
-                    uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
-                    uint32 enum_num =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
-                    std::string enumValueName = GetFNameFromID(index);
-                    std::string prefix = enumName + "::";
-                    if (enumValueName.find(prefix) == 0)
-                    {
-                        enumValueName = enumValueName.substr(prefix.length());
-                    }
+                int diff = offset - pos;
+                char paddingName[64];
+                sprintf(paddingName, "padding[0x%04X];", diff);
 
-                    sdk << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
-                }
-                sdk << "\t}" << std::endl;
-            }
-        }
-        else if (Tools::isEqual(cname, "UInt16Property"))
-        {
-            sdk << "\tuint16 " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "UInt32Property"))
-        {
-            sdk << "\tuint32 " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "UInt64Property"))
-        {
-            sdk << "\tuint64 " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "Int8Property"))
-        {
-            sdk << "\tint8 " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "Int16Property"))
-        {
-            sdk << "\tint16 " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "IntProperty"))
-        {
-            sdk << "\tint " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "Int64Property"))
-        {
-            sdk << "\tint64 " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "BoolProperty"))
-        {
-            sdk << "\tbool " << oname << ";" << std::setbase(10)
-                << "//(ByteOffset: " << (int)FBoolProperty::getByteOffset(prop)
-                << ", ByteMask: " << (int)FBoolProperty::getByteMask(prop)
-                << ", FieldMask: " << (int)FBoolProperty::getFieldMask(prop) << ")"
-                << "[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "FloatProperty"))
-        {
-            sdk << "\tfloat " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "DoubleProperty"))
-        {
-            sdk << "\tdouble " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "ObjectProperty") || Tools::isEqual(cname, "WeakObjectProperty") ||
-                 Tools::isEqual(cname, "LazyObjectProperty") || Tools::isEqual(cname, "AssetObjectProperty") ||
-                 Tools::isEqual(cname, "SoftObjectProperty"))
-        {
-            kaddr propertyClass = FObjectProperty::getPropertyClass(prop);
+                // 输出填充数组
+                std::ostringstream paddingLine;
+                paddingLine << "\t" << std::left << std::setw(50) << "char" << std::left << std::setw(50) << paddingName
+                            << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
+                            << pos << "(0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << diff
+                            << ")";
 
-            sdk << "\t" << UObject::getName(propertyClass) << "* " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-
-            recurrce.push_back(propertyClass);
-        }
-        else if (Tools::isEqual(cname, "ClassProperty") || Tools::isEqual(cname, "AssetClassProperty") ||
-                 Tools::isEqual(cname, "SoftClassProperty"))
-        {
-            kaddr metaClass = FClassProperty::getMetaClass(prop);
-
-            sdk << "\tclass " << UObject::getName(metaClass) << "* " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-
-            recurrce.push_back(metaClass);
-        }
-        else if (Tools::isEqual(cname, "InterfaceProperty"))
-        {
-            kaddr interfaceClass = FInterfaceProperty::getInterfaceClass(prop);
-
-            sdk << "\tinterface class " << UObject::getName(interfaceClass) << "* " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "NameProperty"))
-        {
-            sdk << "\tFName " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "StructProperty"))
-        {
-            kaddr Struct = FStructProperty::getStruct(prop);
-
-            sdk << "\t" << UObject::getName(Struct) << " " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-
-            recurrce.push_back(Struct);
-        }
-        else if (Tools::isEqual(cname, "StrProperty"))
-        {
-            sdk << "\tFString " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "TextProperty"))
-        {
-            sdk << "\tFText " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "ArrayProperty"))
-        {
-            sdk << "\t" << resolveProp(recurrce, FArrayProperty::getInner(prop)) << "[] " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "DelegateProperty") || Tools::isEqual(cname, "MulticastDelegateProperty") ||
-                 Tools::isEqual(cname, "MulticastInlineDelegateProperty") ||
-                 Tools::isEqual(cname, "MulticastSparseDelegateProperty"))
-        {
-            sdk << "\tdelegate " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "MapProperty"))
-        {
-            sdk << "\t<" << resolveProp(recurrce, FMapProperty::getKeyProp(prop)) << ","
-                << resolveProp(recurrce, FMapProperty::getValueProp(prop)) << "> " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "SetProperty"))
-        {
-            sdk << "\t<" << resolveProp(recurrce, FSetProperty::getElementProp(prop)) << "> " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else if (Tools::isEqual(cname, "EnumProperty"))
-        {
-            kaddr enumObj = FEnumProperty::getEnum(prop);
-            std::string enumName = UObject::getName(enumObj);
-            sdk << "\tenum " << enumName << " " << oname << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop)
-                << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-
-            if (UObject::isValid(enumObj))
-            {
-                sdk << "\t{" << std::endl;
-                kaddr enumNamesArray = UEnum::getNameArray(enumObj);
-                for (uint32 i = 0; i < UEnum::getCount(enumObj); i++)
-                {
-                    uint32 index = Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Key);
-                    uint32 enum_num =
-                        Tools::Read<uint32>(enumNamesArray + i * Offsets.TPair.Size + Offsets.TPair.Value);
-                    std::string enumValueName = GetFNameFromID(index);
-                    std::string prefix = enumName + "::";
-                    if (enumValueName.find(prefix) == 0)
-                    {
-                        enumValueName = enumValueName.substr(prefix.length());
-                    }
-                    sdk << "\t\t" << enumValueName << " = " << enum_num << ";" << std::endl;
-                }
-                sdk << "\t}" << std::endl;
-            }
-        }
-        else if (Tools::isEqual(cname, "XigPtrProperty"))
-        {
-            sdk << "\tXigPtrProperty " << oname << ";"
-                << "//[Offset: 0x" << std::hex << FProperty::getOffset(prop) << ", "
-                << "Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        else
-        {
-            sdk << "\t" << cname << " " << oname << ";"
-                << "//[Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
-        }
-        child = FField::getNext(child);
-    }
-    return recurrce;
-}
-
-std::list<kaddr> writeStructChild_Func(std::ofstream &sdk, kaddr childprop)
-{
-    std::list<kaddr> recurrce;
-    kaddr child = childprop;
-    while (child)
-    {
-        kaddr prop = child;
-        std::string oname = UObject::getName(prop);
-        std::string cname = UObject::getClassName(prop);
-
-        if (Tools::isStartWith(cname, "Function") || Tools::isEqual(cname, "DelegateFunction"))
-        {
-            std::string returnVal = "void";
-            std::string params = "";
-
-            kaddr funcParam = UStruct::getChildProperties(prop);
-            while (funcParam)
-            {
-                uint64 PropertyFlags = FProperty::getPropertyFlags(funcParam);
-
-                if ((PropertyFlags & 0x0000000000000400) == 0x0000000000000400)
-                {
-                    returnVal = resolveProp(recurrce, funcParam);
-                }
-                else
-                {
-                    if ((PropertyFlags & 0x0000000000000100) == 0x0000000000000100)
-                    {
-                        params += "out ";
-                    }
-                    if ((PropertyFlags & 0x0000000000000002) == 0x0000000000000002)
-                    {
-                        params += "const ";
-                    }
-                    params += resolveProp(recurrce, funcParam);
-                    params += " ";
-                    params += FField::getName(funcParam);
-                    params += ", ";
-                }
-
-                funcParam = FField::getNext(funcParam);
+                structFile << paddingLine.str() << std::endl;
             }
 
-            if (!params.empty())
-            {
-                params.pop_back();
-                params.pop_back();
-            }
+            std::ostringstream line;
+            line << "\t" << std::left << std::setw(50) << formattedType << std::left << std::setw(50) << (oname + ";")
+                 << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << offset
+                 << "(0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << size << ")";
+            structFile << line.str() << std::endl;
 
-            sdk << "\t";
-
-            int32 FunctionFlags = UFunction::getFunctionFlags(prop);
-
-            if ((FunctionFlags & 0x00002000) == 0x00002000)
-            {
-                sdk << "static" << " ";
-            }
-
-            sdk << returnVal << " " << oname << "(" << params << ");"
-                << "// 0x" << std::hex << (UFunction::getFunc(prop) - Tools::lib_range.base) << std::endl;
+            pos = offset + size;
         }
-        else
+
+        if (pos < structSize)
         {
-            sdk << "\t" << cname << " " << oname << ";"
-                << "//[Size: 0x" << std::hex << FProperty::getElementSize(prop) << "]" << std::endl;
+            int diff = structSize - pos;
+
+            // 生成末尾填充数组
+            char paddingName[64];
+            sprintf(paddingName, "padding[0x%04X];", diff);
+
+            std::ostringstream paddingLine;
+            paddingLine << "\t" << std::left << std::setw(50) << "char" << std::left << std::setw(50) << paddingName
+                        << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
+                        << pos << "(0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << diff
+                        << ")";
+
+            structFile << paddingLine.str() << std::endl;
         }
-
-        child = UField::getNext(child);
-    }
-    return recurrce;
-}
-
-void writeStruct(std::ofstream &sdk, kaddr clazz)
-{
-    // std::list<kaddr> recurrce;
-
-    // kaddr currStruct = clazz;
-    // while (UObject::isValid(currStruct))
-    // {
-    //     std::string name = UObject::getName(currStruct);
-    //     if (Tools::isEqual(name, "None") || Tools::isContain(name, "/Game/") || Tools::isContain(name, "_png") ||
-    //         name.empty())
-    //     {
-    //         break;
-    //     }
-
-    //     uint32 NameID = UObject::getNameID(currStruct);
-    //     if (!isScanned(NameID))
-    //     {
-    //         structIDMap.push_back(NameID);
-    //         sdk << "Class: " << UStruct::getStructClassPath(currStruct) << std::endl;
-    //         recurrce.merge(writeStructChild(sdk, UStruct::getChildProperties(currStruct)));
-    //         recurrce.merge(writeStructChild_Func(sdk, UStruct::getChildren(currStruct)));
-    //         sdk << "\n------------------------------------" << std::endl;
-    //     }
-    //     currStruct = UStruct::getSuperClass(currStruct);
-    // }
-
-    // for (auto it = recurrce.begin(); it != recurrce.end(); ++it)
-    //     writeStruct(sdk, *it);
-}
-
-void DumpSDK(std::string outputpath)
-{
-    std::ofstream sdk(outputpath + "/SDK.txt", std::ofstream::out);
-    if (sdk.is_open())
-    {
-        std::cout << "[4] Dumping SDK ---" << std::endl;
-        int32 count = GetObjectCount();
-        if (count < 10 || count > 999999)
-        {
-            count = 300000;
-        }
-        for (int32 i = 0; i < count; i++)
-        {
-            kaddr uobj = GetUObjectFromID(i);
-            if (UObject::isValid(uobj))
-            {
-                writeStruct(sdk, UObject::getClass(uobj));
-            }
-        }
+        structFile << "};\n";
     }
 }

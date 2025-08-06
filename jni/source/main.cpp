@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "Config.h"
 #include "Dumper.h"
 #include "Tools.h"
 
@@ -25,11 +24,6 @@ using namespace std;
 string pkg("com.tencent.ace.match2024");
 string outputpath("/sdcard/Download/match2024");
 static const char *lib_name = "libUE4.so";
-bool isStrDump = false;
-bool isActorDump = false;
-bool isVerbose = false;
-bool isObjectDump = false;
-bool isSDKDump = false;
 
 int main(int argc, char *argv[])
 {
@@ -63,25 +57,9 @@ int main(int argc, char *argv[])
     cout << lib_name << ": base_addr: 0x" << std::hex << Tools::lib_range.base << ", end_addr: 0x"
          << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
 
-    // get strings dump
-    isStrDump = false;
-    if (isStrDump)
-        DumpStrings(outputpath);
-
-    // get actors dump
-    isActorDump = false;
-    if (isActorDump)
-        DumpActors(outputpath);
-
-    // get objects dump
-    isObjectDump = true;
-    if (isObjectDump)
-        DumpObjects(outputpath);
-
-    // // get SDK dump
-    // isSDKDump = true;
-    // if (isSDKDump)
-    //     DumpSDK(outputpath);
+    DumpStrings(outputpath);
+    DumpActors(outputpath);
+    DumpSDK(outputpath);
 
     return 0;
 }

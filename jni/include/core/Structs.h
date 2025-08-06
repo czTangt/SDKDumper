@@ -36,11 +36,6 @@ struct UObject
     {
         return getName(getClass(object));
     }
-
-    static std::string getOuterName(kaddr object)
-    {
-        return getName(getOuter(object));
-    }
 };
 
 struct UStruct
@@ -50,19 +45,9 @@ struct UStruct
         return Tools::getPtr(structz + Offsets.UStruct.SuperStruct);
     }
 
-    static kaddr getChildren(kaddr structz)
-    { // UField* -> 该结构体的方法
-        return Tools::getPtr(structz + Offsets.UStruct.Children);
-    }
-
     static kaddr getChildProperties(kaddr structz)
     { // FField* -> 该结构体的属性
         return Tools::getPtr(structz + Offsets.UStruct.ChildProperties);
-    }
-
-    static std::string getClassName(kaddr clazz)
-    {
-        return UObject::getName(clazz);
     }
 
     static uint32 getPropertiesSize(kaddr structz)
@@ -186,7 +171,7 @@ struct FBoolProperty
     }
 };
 
-struct FObjectProperty
+struct FObjectPropertyBase
 {
     static kaddr getPropertyClass(kaddr prop)
     { // class UClass*

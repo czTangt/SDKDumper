@@ -31,25 +31,16 @@ kaddr GetUObjectFromID(uint32 index);
 int32 GetObjectCount();
 ObjectType ClassifyObject(kaddr classPtr);
 std::string GetOuterFullName(kaddr uobj);
+std::string FormatPropertyType(kaddr prop);
 
 void DumpStrings(std::string outputpath);
 void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSize);
 void DumpActors(std::string outputpath);
-void DumpObjects(std::string outputpath);
-
-void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects);
-std::string FormatPropertyType(kaddr prop);
-void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects);
-void ProcessAllFunctions(std::string outputpath, const std::vector<kaddr> &functionObjects);
-
 void DumpSDK(std::string outputpath);
 
-std::string resolveProp(std::list<kaddr> &recurrce, kaddr prop);
-
-void writeStruct(std::ofstream &sdk, kaddr clazz);
-
-std::list<kaddr> writeStructChild_Func(std::ofstream &sdk, kaddr childprop);
-
-std::list<kaddr> writeStructChild(std::ofstream &sdk, kaddr childprop);
+void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects);
+void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects);
+void ProcessAllFunctions(std::string outputpath, const std::vector<kaddr> &functionObjects);
+void ProcessAllStructs(std::string outputpath, const std::vector<kaddr> &structObjects);
 
 #endif // DUMPER_H

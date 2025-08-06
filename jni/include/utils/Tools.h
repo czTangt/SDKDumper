@@ -46,17 +46,11 @@ std::string readString(kaddr address, unsigned int size);
 kaddr getRealOffset(kaddr offset);
 // read a pointer value from a given address.
 kaddr getPtr(kaddr address);
-// read an int32 value from a given address.
-int32 getInt32(kaddr address);
-// read an uint8 value from a given address.
-uint8 getUInt8(kaddr address);
 
 // check if a string is equal to a given C-style string.
 bool isEqual(std::string s1, const char *check);
 // check if a string contains a substring.
 bool isContain(std::string str, std::string check);
-// check if a string starts with a given C-style string.
-bool isStartWith(std::string str, const char *check);
 
 // read single value
 template <typename T> T Read(kaddr address)
