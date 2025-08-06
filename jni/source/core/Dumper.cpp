@@ -463,7 +463,64 @@ std::string FormatPropertyType(kaddr prop)
     {
         return "FMulticastInlineDelegate";
     }
-    return "";
+
+    // 特殊处理
+    if (Tools::isEqual(cname, "MapProperty"))
+    {
+        std::string keyType = FormatPropertyType(FMapProperty::getKeyProp(prop));
+        std::string valueType = FormatPropertyType(FMapProperty::getValueProp(prop));
+        return "TMap<" + keyType + ", " + valueType + ">";
+    }
+    else if (Tools::isEqual(cname, "SetProperty"))
+    {
+        return "TSet<" + FormatPropertyType(FSetProperty::getElementProp(prop)) + ">";
+    }
+    else if (Tools::isEqual(cname, "EnumProperty"))
+    {
+        return "enum class " + UObject::getName(FEnumProperty::getEnum(prop));
+    }
+    else if (Tools::isEqual(cname, "BoolProperty"))
+    {
+        if (FBoolProperty::getFieldMask(prop) == 0xFF)
+        {
+            return "bool"; // 如果是单个布尔值
+        }
+        return "char";
+    }
+    else if (Tools::isEqual(cname, "ByteProperty"))
+    {
+        return "enum class " + UObject::getName(FByteProperty::getEnum(prop));
+    }
+    else if (Tools::isEqual(cname, "ClassProperty"))
+    {
+        return UStruct::getCPPName(FClassProperty::getMetaClass(prop)) + "*";
+    }
+    else if (Tools::isEqual(cname, "StructProperty"))
+    {
+        return FProperty::getPropCPPName(prop); // 返回结构体指针类型
+    }
+    else if (Tools::isEqual(cname, "InterfaceProperty"))
+    {
+        return "TScriptInterface<I" + UObject::getName(FInterfaceProperty::getInterfaceClass(prop)) + ">";
+    }
+    else if (Tools::isEqual(cname, "ObjectPropertyBase"))
+    {
+        return FProperty::getPropCPPName(prop);
+    }
+    else if (Tools::isEqual(cname, "ArrayProperty"))
+    {
+        return "TArray<" + FormatPropertyType(FArrayProperty::getInner(prop)) + ">";
+    }
+    else if (Tools::isEqual(cname, "WeakObjectProperty"))
+    {
+        return "TWeakObjectPtr<" + UStruct::getCPPName(FClassProperty::getMetaClass(prop)) + ">";
+    }
+    else if (Tools::isEqual(cname, "SoftObjectProperty"))
+    {
+        return "TSoftObjectPtr<" + UStruct::getCPPName(FClassProperty::getMetaClass(prop)) + ">";
+    }
+
+    return FProperty::getPropCPPName(prop) + "*"; // 默认返回指针类型
 }
 
 void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects)
@@ -482,27 +539,68 @@ void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classOb
 
     for (kaddr classObj : classObjects)
     {
+        int pos = 0;
         std::string className = UStruct::getCPPName(classObj);
-        classFile << "\n// " << UObject::getClassName(classObj) << " " << GetOuterFullName(classObj) << std::endl
-                  << "// Class Size: 0x" << std::hex << UStruct::getPropertiesSize(classObj) << std::endl;
-        classFile << "class " << className << " : public " << UStruct::getCPPName(UStruct::getSuperClass(classObj))
-                  << std::endl
-                  << "{" << std::endl;
-        // kaddr currStruct = UObject::getClass(classObj);
-
-        for (kaddr child = UStruct::getChildProperties(classObj); child; child = FField::getNext(child))
+        uint32 classSize = UStruct::getPropertiesSize(classObj);
+        kaddr superClass = UStruct::getSuperClass(classObj);
+        if (superClass)
         {
-            kaddr prop = child;
+            pos = UStruct::getPropertiesSize(superClass);
+        }
+
+        classFile << "\n// " << UObject::getClassName(classObj) << " " << GetOuterFullName(classObj) << std::endl
+                  << "// Class Size: 0x" << std::hex << classSize << std::endl;
+        classFile << "class " << className << " : public " << UStruct::getCPPName(superClass) << std::endl
+                  << "{" << std::endl;
+
+        for (kaddr prop = UStruct::getChildProperties(classObj); prop; prop = FField::getNext(prop))
+        {
             std::string oname = FField::getName(prop);      // 成员变量名称
             std::string cname = FField::getClassName(prop); // 成员变量类型名称
+            uint32 offset = FProperty::getOffset(prop);     // 成员变量偏移
+            uint32 size = FProperty::getElementSize(prop);  // 成员变量大小
             std::string formattedType = FormatPropertyType(prop);
 
+            if (pos < size)
+            {
+                int diff = offset - pos;
+                char paddingName[64];
+                sprintf(paddingName, "padding[0x%04X];", diff);
+
+                // 输出填充数组
+                std::ostringstream paddingLine;
+                paddingLine << "\t" << std::left << std::setw(50) << "char" << std::left << std::setw(50) << paddingName
+                            << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
+                            << pos << "(0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << diff
+                            << ")";
+
+                classFile << paddingLine.str() << std::endl;
+            }
+
             std::ostringstream line;
-            line << "\t" << std::left << std::setw(50) << cname << std::left << std::setw(50) << (oname + ";")
-                 << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
-                 << FProperty::getOffset(prop) << "(0x" << std::setfill('0') << std::setw(4) << std::hex
-                 << std::uppercase << FProperty::getElementSize(prop) << ")";
+            line << "\t" << std::left << std::setw(50) << formattedType << std::left << std::setw(50) << (oname + ";")
+                 << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << offset
+                 << "(0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << size << ")";
             classFile << line.str() << std::endl;
+
+            pos = offset + size;
+        }
+
+        if (pos < classSize)
+        {
+            int diff = classSize - pos;
+
+            // 生成末尾填充数组
+            char paddingName[64];
+            sprintf(paddingName, "padding[0x%04X];", diff);
+
+            std::ostringstream paddingLine;
+            paddingLine << "\t" << std::left << std::setw(50) << "char" << std::left << std::setw(50) << paddingName
+                        << "// 0x" << std::right << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
+                        << pos << "(0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << diff
+                        << ")";
+
+            classFile << paddingLine.str() << std::endl;
         }
         classFile << "};\n";
     }

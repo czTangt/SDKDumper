@@ -158,7 +158,7 @@ struct _Offsets
 
     struct
     {
-        kaddr InterfaceClass = 0x80; // 0x8
+        kaddr InterfaceClass = 0x78; // 0x8
     } FInterfaceProperty;
 
     struct

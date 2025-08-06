@@ -79,13 +79,9 @@ struct UStruct
             {
                 return "A" + name;
             }
-            else if (uStruct == objectFullName.CoreClass)
+            else if (uStruct == objectFullName.CoreObject)
             {
                 return "U" + name;
-            }
-            else if (uStruct == objectFullName.CoreEnum)
-            {
-                return "E" + name;
             }
         }
         return "F" + name;
@@ -125,6 +121,12 @@ struct FProperty
     static uint32 getOffset(kaddr prop)
     {
         return Tools::Read<uint32>(prop + Offsets.FProperty.Offset_Internal);
+    }
+
+    static std::string getPropCPPName(kaddr prop)
+    {
+        kaddr propObject = Tools::getPtr(prop + Offsets.FProperty.Size);
+        return UStruct::getCPPName(propObject);
     }
 };
 
