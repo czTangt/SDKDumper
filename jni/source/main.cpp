@@ -1,29 +1,19 @@
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <dirent.h>
-#include <fstream>
 #include <getopt.h>
 #include <iomanip>
-#include <iostream>
-#include <list>
-#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <vector>
 
 #include "Dumper.h"
-#include "Tools.h"
 
 using namespace std;
 
 // 配置 app 信息
-string pkg("com.tencent.ace.match2024");
-string outputpath("/sdcard/Download/match2024");
+string pkg("com.tencent.ace.gamematch2024final");
+string outputpath("/sdcard/Download/match2024_final");
 static const char *lib_name = "libUE4.so";
 
 int main(int argc, char *argv[])
@@ -59,9 +49,11 @@ int main(int argc, char *argv[])
          << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
 
     // dump strings, actors, sdk
+    // DumpStrings(outputpath);
+    // DumpActors(outputpath);
+    // DumpSDK(outputpath);
+
     DumpStrings(outputpath);
-    DumpActors(outputpath);
-    DumpSDK(outputpath);
 
     return 0;
 }

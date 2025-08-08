@@ -17,7 +17,8 @@ LOCAL_SRC_FILES := source/main.cpp \
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
                     $(LOCAL_PATH)/include/core \
-                    $(LOCAL_PATH)/include/utils
+                    $(LOCAL_PATH)/include/utils \
+					$(LOCAL_PATH)/include/game
 
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -lz -llog
 

@@ -11,10 +11,10 @@ struct _Offsets
 
     struct
     {
-        kaddr GWorld = 0x0B32D8A8;
-        kaddr GName = 0x0B171CC0;
-        kaddr GUObjectArray = 0xB1B5F98;
-        kaddr PointerSize = 0x8;
+        kaddr GWorld = 0;
+        kaddr GName = 0;
+        kaddr GUObjectArray = 0;
+        kaddr PointerSize = 0;
     } Global;
 
     struct
@@ -187,7 +187,5 @@ struct _Offsets
         kaddr Enum = 0x80; // 0x8
     } FEnumProperty;
 };
-
-inline _Offsets Offsets;
 
 #endif // OFFSETS_H

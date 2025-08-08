@@ -1,8 +1,7 @@
 #ifndef DUMPER_H
 #define DUMPER_H
 
-#include "Offsets.h"
-#include "Tools.h"
+#include "Tencent2024Final.h"
 #include <map>
 #include <sstream>
 
@@ -48,5 +47,9 @@ void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjec
 void ProcessAllClasses(std::string outputpath, const std::vector<kaddr> &classObjects);
 void ProcessAllFunctions(std::string outputpath, const std::vector<kaddr> &functionObjects);
 void ProcessAllStructs(std::string outputpath, const std::vector<kaddr> &structObjects);
+
+namespace TencentFinal2024
+{
+} // namespace TencentFinal2024
 
 #endif // DUMPER_H

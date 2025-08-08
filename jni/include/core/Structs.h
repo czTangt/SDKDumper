@@ -3,8 +3,6 @@
 
 #include "Dumper.h"
 
-struct UStruct;
-
 struct UObject
 {
     static kaddr getClass(kaddr object)
