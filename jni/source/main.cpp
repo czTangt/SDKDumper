@@ -53,7 +53,9 @@ int main(int argc, char *argv[])
     // DumpActors(outputpath);
     // DumpSDK(outputpath);
 
-    DumpStrings(outputpath);
+    // DumpObjects(outputpath);
+    // std::cout << GetFNameFromID(0x6847b) << std::endl;
+    std::cout << GetFNameFromID(451687) << std::endl;
 
     return 0;
 }

@@ -7,7 +7,6 @@ struct _2024Tencent : public _Offsets
 {
     _2024Tencent()
     {
-        // 设置全局偏移
         Global.GWorld = 0xB32D8A8;
         Global.GName = 0xB171CC0;
         Global.GUObjectArray = 0xB1B5F98;

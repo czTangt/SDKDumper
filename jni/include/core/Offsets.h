@@ -75,6 +75,7 @@ struct _Offsets
 
     struct
     {
+        kaddr Padd = 0x0;
         kaddr Object = 0x0; // 0x8
         kaddr Size = 0x18;
     } FUObjectItem;

@@ -35,12 +35,14 @@ ObjectType ClassifyObject(kaddr classPtr);
 std::string GetOuterFullName(kaddr uobj);
 // 解析 Property 类型
 std::string FormatPropertyType(kaddr prop);
+// dump Block
+void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSize);
 
 // dump
 void DumpStrings(std::string outputpath);
-void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 blockSize);
 void DumpActors(std::string outputpath);
 void DumpSDK(std::string outputpath);
+void DumpObjects(std::string outputpath);
 
 // 处理所有枚举、类、函数和结构体
 void ProcessAllEnums(std::string outputpath, const std::vector<kaddr> &enumObjects);
