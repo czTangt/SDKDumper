@@ -55,7 +55,9 @@ int main(int argc, char *argv[])
 
     // DumpObjects(outputpath);
     // std::cout << GetFNameFromID(0x6847b) << std::endl;
-    std::cout << GetFNameFromID(451687) << std::endl;
-
+    std::cout << GetFNameFromID(2) << std::endl;
+    // int a = 0x00000000bb23cc30;
+    // int *ptr = reinterpret_cast<int *>(a);
+    // printf("Value at address: %d\n", *ptr);
     return 0;
 }

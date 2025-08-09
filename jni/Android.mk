@@ -9,7 +9,11 @@ LOCAL_CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
 LOCAL_CFLAGS += -fno-rtti -fno-exceptions
 LOCAL_CFLAGS += -DNDEBUG
 
-LOCAL_MODULE := sdkdumper64
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_MODULE := sdkdumper32
+else
+    LOCAL_MODULE := sdkdumper64
+endif
 
 LOCAL_SRC_FILES := source/main.cpp \
                    source/core/Dumper.cpp \

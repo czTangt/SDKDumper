@@ -3,11 +3,6 @@
 
 #include "Offsets.h"
 
-#ifdef kaddr
-#undef kaddr
-#endif
-#define kaddr uint32
-
 struct _2024TencentFinal : public _Offsets
 {
     _2024TencentFinal()

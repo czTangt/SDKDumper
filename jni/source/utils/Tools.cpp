@@ -3,8 +3,14 @@
 namespace Tools
 {
 pid_t target_pid = -1;
+
+#if defined(__arm__)
+constexpr int process_vm_readv_syscall = 376;
+constexpr int process_vm_writev_syscall = 377;
+#elif defined(__aarch64__)
 constexpr int process_vm_readv_syscall = 270;
 constexpr int process_vm_writev_syscall = 271;
+#endif
 
 bool pvm(void *address, void *buffer, size_t size, bool iswrite)
 {

@@ -15,9 +15,8 @@ typedef signed int int32;
 typedef signed long long int64;
 
 // Unsigned pointer type.
-#ifndef kaddr
-#define kaddr uintptr_t
-#endif
+typedef uintptr_t kaddr;
+
 struct ModuleRange
 {
     kaddr base;
