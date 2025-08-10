@@ -3,18 +3,13 @@
 
 #include "Offsets.h"
 
-struct _2024TencentFinal : public _Offsets
+struct _2024TencentFinal : public _Offsets32
 {
     _2024TencentFinal()
     {
         Global.GWorld = 0x4F5C0D0;
         Global.GName = 0x4E2EC00;
         Global.GUObjectArray = 0x4E533AC;
-        Global.PointerSize = 0x4;
-
-        FNameEntryAllocator.CurrentBlock = 0x28;
-        FNameEntryAllocator.CurrentByteCursor = 0x2C;
-        FNameEntryAllocator.Blocks = 0x30;
 
         TUObjectArray.NumElements = 0xC;
         FUObjectItem.Padd = 0x4;
@@ -33,11 +28,12 @@ struct _2024TencentFinal : public _Offsets
 
         UField.Next = 0x2C;
 
-        FField.ClassPrivate = 0x8;
-        FField.Next = 0x10;
-        FField.NamePrivate = 0x14;
+        UEnum.Names = 0x3C;
+        UEnum.ArrayNum = 0x40;
 
-        FClassProperty.MetaClass = 0x50;
+        UWorld.PersistentLevel = 0x58;
+        ULevel.AActors = 0x9C;
+        ULevel.ActorsCount = 0xA0;
     }
 };
 

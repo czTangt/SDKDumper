@@ -45,19 +45,13 @@ int main(int argc, char *argv[])
         cout << "Can't find Library: " << lib_name << endl;
         return -1;
     }
-    cout << lib_name << ": base_addr: 0x" << std::hex << Tools::lib_range.base << ", end_addr: 0x"
-         << Tools::lib_range.end << ", lib_size: 0x" << Tools::lib_range.size << std::dec << endl;
+    cout << lib_name << ": base_addr: 0x" << hex << Tools::lib_range.base << ", end_addr: 0x" << Tools::lib_range.end
+         << ", lib_size: 0x" << Tools::lib_range.size << endl;
+    cout << endl;
 
     // dump strings, actors, sdk
-    // DumpStrings(outputpath);
-    // DumpActors(outputpath);
-    // DumpSDK(outputpath);
-
-    // DumpObjects(outputpath);
-    // std::cout << GetFNameFromID(0x6847b) << std::endl;
-    std::cout << GetFNameFromID(2) << std::endl;
-    // int a = 0x00000000bb23cc30;
-    // int *ptr = reinterpret_cast<int *>(a);
-    // printf("Value at address: %d\n", *ptr);
+    DumpStrings(outputpath);
+    DumpActors(outputpath);
+    DumpSDK(outputpath);
     return 0;
 }

@@ -6,6 +6,7 @@ void DumpBlocks(std::ofstream &gname, kaddr block, uint32 blockIdx, uint32 block
     // 获取块内 FNameEntry 的起始结束地址
     kaddr It = Tools::getPtr(block + (blockIdx * Offsets.Global.PointerSize));
     kaddr End = It + blockSizeBytes - Offsets.FNameEntry.StringName;
+    std::cout << std::hex << "It: 0x" << It << "End: 0x" << End << std::endl;
     uint16 Offset = 0;
     while (It < End)
     {

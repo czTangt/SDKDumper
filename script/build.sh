@@ -30,16 +30,16 @@ adb push $GENERATE_FILE $SDKDUMP_FILE
 adb shell chmod 755 $SDKDUMP_FILE
 adb shell su -c "$SDKDUMP_FILE"
 
-# echo "============= Pulling SDK Files ============="
-# mkdir -p $LOCAL_SDK_DIR
-# adb pull $REMOTE_SDK_DIR/Strings.txt $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Strings.txt"
-# adb pull $REMOTE_SDK_DIR/Actors.txt $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Actors.txt"
-# adb pull $REMOTE_SDK_DIR/Objects.txt $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Objects.txt"
-# adb pull $REMOTE_SDK_DIR/Class.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Class.hpp"
-# adb pull $REMOTE_SDK_DIR/Function.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Function.hpp"
-# adb pull $REMOTE_SDK_DIR/Enum.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Enum.hpp"
-# adb pull $REMOTE_SDK_DIR/Struct.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Struct.hpp"
+echo "============= Pulling SDK Files ============="
+mkdir -p $LOCAL_SDK_DIR
+adb pull $REMOTE_SDK_DIR/Strings.txt $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Strings.txt"
+adb pull $REMOTE_SDK_DIR/Actors.txt $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Actors.txt"
+adb pull $REMOTE_SDK_DIR/Objects.txt $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Objects.txt"
+adb pull $REMOTE_SDK_DIR/Class.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Class.hpp"
+adb pull $REMOTE_SDK_DIR/Function.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Function.hpp"
+adb pull $REMOTE_SDK_DIR/Enum.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Enum.hpp"
+adb pull $REMOTE_SDK_DIR/Struct.hpp $LOCAL_SDK_DIR/ 2>/dev/null || echo "Failed to pull Struct.hpp"
 
-# echo "Files pulled to: $LOCAL_SDK_DIR"
+echo "Files pulled to: $LOCAL_SDK_DIR"
 
 echo "============= Complete ============="
