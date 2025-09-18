@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <cstdint>
+
 // Unsigned base types.
 typedef unsigned char uint8;
 typedef unsigned short int uint16;
